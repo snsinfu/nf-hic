@@ -1,0 +1,85 @@
+{
+    "name": "nf-hic",
+    "homePage": "",
+    "repos": {
+        "https://github.com/nf-core/modules.git": {
+            "modules": {
+                "nf-core": {
+                    "bwa/index": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "bwa/mem": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "bwamem2/index": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "bwamem2/mem": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "samtools/faidx": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "pairtools/parse": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "pairtools/sort": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "pairtools/merge": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "pairtools/dedup": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "pairtools/split": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "pairtools/select": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "cooler/cload": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "cooler/zoomify": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "cooler/merge": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    }
+                }
+            },
+            "subworkflows": {
+                "nf-core": {}
+            }
+        }
+    }
+}
