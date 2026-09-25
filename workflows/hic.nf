@@ -12,7 +12,19 @@ include { MERGE_COOLERS as MERGE_LIBRARY    } from '../subworkflows/local/merge_
 include { MERGE_COOLERS as MERGE_REPLICATE  } from '../subworkflows/local/merge_coolers'
 
 workflow HIC {
+    take:
+    fasta          // path: resolved reference fasta (from --fasta or --genome)
+    bwa_index      // path: resolved aligner index directory (from --bwa_index or --genome); may be null
+    chrom_sizes    // path: resolved chrom.sizes (from --chrom_sizes or --genome); may be null
+
     main:
+    if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
+        def keys = params.genomes.keySet().join(', ')
+        error("Genome '${params.genome}' not found in any config file provided to the pipeline. Available genome keys: ${keys}")
+    }
+    if (!fasta) {
+        error("Genome fasta file not specified: use --genome <key>, --fasta <file.fa>, or a custom config.")
+    }
     if (!(params.aligner in ['bwa', 'bwa-mem2'])) {
         error("Invalid --aligner '${params.aligner}'. Use 'bwa' or 'bwa-mem2'.")
     }
@@ -45,7 +57,7 @@ workflow HIC {
     //
     // Reference preparation
     //
-    PREPARE_GENOME(params.fasta, params.bwa_index, params.chrom_sizes)
+    PREPARE_GENOME(fasta, bwa_index, chrom_sizes)
 
     //
     // Per-library alignment, deduplication and contact maps
