@@ -62,7 +62,7 @@ workflow HIC {
     //
     // Merged library: merge technical replicates within a biological replicate
     //
-    ch_mlb = LIBRARY_HIC.out.cool
+    ch_mlb = LIBRARY_HIC.out.cool_raw
         .map { meta, cool ->
             def suffix = meta.mapq > 0 ? ".Q${meta.mapq}" : ''
             [
@@ -81,7 +81,7 @@ workflow HIC {
     //
     // Merged replicate: merge biological replicates of a sample
     //
-    ch_mrp = MERGE_LIBRARY.out.cool
+    ch_mrp = MERGE_LIBRARY.out.cool_raw
         .map { meta, cool ->
             def suffix = meta.mapq > 0 ? ".Q${meta.mapq}" : ''
             [

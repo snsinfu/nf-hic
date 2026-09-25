@@ -29,6 +29,7 @@ Vendored modules:
     modules/nf-core/pairtools/dedup
     modules/nf-core/pairtools/split
     modules/nf-core/pairtools/select
+    modules/nf-core/cooler/balance
     modules/nf-core/cooler/cload
     modules/nf-core/cooler/zoomify
     modules/nf-core/cooler/merge

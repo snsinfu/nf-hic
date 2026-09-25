@@ -17,7 +17,8 @@ include { PAIRTOOLS_DEDUP  } from '../../../modules/nf-core/pairtools/dedup'
 include { PAIRTOOLS_SPLIT  } from '../../../modules/nf-core/pairtools/split'
 include { PAIRTOOLS_SELECT } from '../../../modules/nf-core/pairtools/select'
 
-include { COOLER_CLOAD } from '../../../modules/nf-core/cooler/cload'
+include { COOLER_CLOAD  } from '../../../modules/nf-core/cooler/cload'
+include { COOLER_BALANCE } from '../../../modules/nf-core/cooler/balance'
 include { COOLER_ZOOMIFY as COOLER_ZOOMIFY_LIBRARY } from '../../../modules/nf-core/cooler/zoomify'
 
 workflow LIBRARY_HIC {
@@ -76,11 +77,24 @@ workflow LIBRARY_HIC {
         'pairs',
         bin_size
     )
+
+    //
+    // Balance a derived copy of the raw cooler (published); zoomify the raw cooler
+    //
+    ch_cool = channel.empty()
+    if (params.balance) {
+        COOLER_BALANCE(COOLER_CLOAD.out.cool.map { meta, cool -> [ meta, cool, '' ] })
+        ch_cool = COOLER_BALANCE.out.cool
+    }
+    else {
+        ch_cool = COOLER_CLOAD.out.cool
+    }
     COOLER_ZOOMIFY_LIBRARY(COOLER_CLOAD.out.cool)
 
     emit:
-    bam   = PAIRTOOLS_SPLIT.out.bam
-    pairs = PAIRTOOLS_SELECT.out.selected
-    cool  = COOLER_CLOAD.out.cool
-    mcool = COOLER_ZOOMIFY_LIBRARY.out.mcool
+    bam      = PAIRTOOLS_SPLIT.out.bam
+    pairs    = PAIRTOOLS_SELECT.out.selected
+    cool     = ch_cool
+    cool_raw = COOLER_CLOAD.out.cool
+    mcool    = COOLER_ZOOMIFY_LIBRARY.out.mcool
 }
