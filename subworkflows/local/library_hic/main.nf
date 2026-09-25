@@ -28,7 +28,7 @@ workflow LIBRARY_HIC {
     ch_fasta         // channel: path(fasta)
     ch_chrom_sizes   // channel: path(chrom_sizes)
     bin_size         // integer
-    mapq_filters     // list of integers, e.g. [0] or [0, 30]
+    mapq_filters     // list of integers, e.g. [0], [0, 30] or [0, 30, 60]
 
     main:
     //

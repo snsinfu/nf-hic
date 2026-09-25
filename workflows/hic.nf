@@ -28,7 +28,25 @@ workflow HIC {
     if (!(params.aligner in ['bwa', 'bwa-mem2'])) {
         error("Invalid --aligner '${params.aligner}'. Use 'bwa' or 'bwa-mem2'.")
     }
-    def mapq_filters = (params.min_mapq && params.min_mapq > 0) ? [0, params.min_mapq as int] : [0]
+    //
+    // MAPQ filters: always keep the unfiltered (Q0) set, then add one per requested
+    // threshold. --min_mapq accepts a comma-separated list, e.g. --min_mapq 0,30,60.
+    //
+    def mapq_thresholds = []
+    if (params.min_mapq != null) {
+        def raw   = params.min_mapq
+        def items = (raw instanceof List) ? raw : raw.toString().split(',')
+        mapq_thresholds = items
+            .collect { item -> item.toString().trim() }
+            .findAll { item -> item }
+            .collect { token ->
+                if (!(token ==~ /\d+/)) {
+                    error("Invalid --min_mapq value '${token}'. Use a comma-separated list of non-negative integers, e.g. --min_mapq 0,30,60")
+                }
+                token as int
+            }
+    }
+    def mapq_filters = ([0] + mapq_thresholds).unique().sort()
 
     //
     // Build one input item per samplesheet row and normalize the (optional) tech replicate
