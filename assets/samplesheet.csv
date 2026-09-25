@@ -1,0 +1,5 @@
+sample,fastq_1,fastq_2,bio_replicate,tech_replicate
+sampleA,fastq/sampleA_1.fastq.gz,fastq/sampleA_2.fastq.gz,1,1
+sampleA,fastq/sampleA_lane2_1.fastq.gz,fastq/sampleA_lane2_2.fastq.gz,1,1
+sampleA,fastq/sampleA_tech2_1.fastq.gz,fastq/sampleA_tech2_2.fastq.gz,1,2
+sampleB,fastq/sampleB_1.fastq.gz,fastq/sampleB_2.fastq.gz,2,1

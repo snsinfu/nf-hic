@@ -1,0 +1,58 @@
+nf-hic
+Copyright (c) snsinfu
+
+================================================================================
+Third-party notices
+================================================================================
+
+This pipeline bundles unmodified source code from the nf-core/modules repository
+(https://github.com/nf-core/modules), which is distributed under the MIT License.
+The vendored files are located under modules/nf-core/ and are pinned to the
+revision below. Per-module authors and maintainers are recorded in each module's
+meta.yml; tool licences are recorded there as well under tools.<tool>.licence.
+
+Vendored revision:
+
+    https://github.com/nf-core/modules.git
+    commit efec54255f9baad3ea032173d75031929883bed8
+
+Vendored modules:
+
+    modules/nf-core/bwa/index
+    modules/nf-core/bwa/mem
+    modules/nf-core/bwamem2/index
+    modules/nf-core/bwamem2/mem
+    modules/nf-core/samtools/faidx
+    modules/nf-core/pairtools/parse
+    modules/nf-core/pairtools/sort
+    modules/nf-core/pairtools/merge
+    modules/nf-core/pairtools/dedup
+    modules/nf-core/pairtools/split
+    modules/nf-core/pairtools/select
+    modules/nf-core/cooler/cload
+    modules/nf-core/cooler/zoomify
+    modules/nf-core/cooler/merge
+
+Upstream licence text:
+
+    MIT License
+
+    Copyright (c) Philip Ewels
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
