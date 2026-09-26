@@ -24,7 +24,7 @@ include { COOLER_ZOOMIFY as COOLER_ZOOMIFY_LIBRARY } from '../../../modules/nf-c
 workflow LIBRARY_HIC {
     take:
     ch_reads         // channel: [ val(meta), fastq_1, fastq_2 ]
-    ch_bwa_index     // channel: [ val(meta), path(index) ]
+    ch_index         // channel: [ val(meta), path(index) ]
     ch_fasta         // channel: path(fasta)
     ch_chrom_sizes   // channel: path(chrom_sizes)
     bin_size         // integer
@@ -36,11 +36,11 @@ workflow LIBRARY_HIC {
     //
     ch_bam = channel.empty()
     if (params.aligner == 'bwa') {
-        BWA_MEM(ch_reads, ch_bwa_index, ch_fasta.map { fasta -> [ [:], fasta ] }, false)
+        BWA_MEM(ch_reads, ch_index, ch_fasta.map { fasta -> [ [:], fasta ] }, false)
         ch_bam = BWA_MEM.out.bam
     }
     else {
-        BWAMEM2_MEM(ch_reads, ch_bwa_index, ch_fasta.map { fasta -> [ [:], fasta ] }, false)
+        BWAMEM2_MEM(ch_reads, ch_index, ch_fasta.map { fasta -> [ [:], fasta ] }, false)
         ch_bam = BWAMEM2_MEM.out.bam
     }
 

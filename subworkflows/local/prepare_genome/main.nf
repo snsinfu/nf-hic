@@ -11,7 +11,7 @@ include { SAMTOOLS_FAIDX } from '../../../modules/nf-core/samtools/faidx'
 workflow PREPARE_GENOME {
     take:
     fasta         // path: genome fasta
-    bwa_index     // path: prebuilt index directory for the selected aligner (optional)
+    index         // path: prebuilt index directory for the selected aligner (optional)
     chrom_sizes   // path: chrom.sizes override (optional)
 
     main:
@@ -20,21 +20,21 @@ workflow PREPARE_GENOME {
     //
     // Build the aligner index if one was not supplied
     //
-    if (!bwa_index) {
+    if (!index) {
         if (params.aligner == 'bwa') {
             BWA_INDEX(ch_fasta.map { item -> [ [:], item ] })
-            ch_bwa_index = BWA_INDEX.out.index
+            ch_index = BWA_INDEX.out.index
         }
         else if (params.aligner == 'bwa-mem2') {
             BWAMEM2_INDEX(ch_fasta.map { item -> [ [:], item ] })
-            ch_bwa_index = BWAMEM2_INDEX.out.index
+            ch_index = BWAMEM2_INDEX.out.index
         }
         else {
             error("Invalid --aligner '${params.aligner}'. Use 'bwa' or 'bwa-mem2'.")
         }
     }
     else {
-        ch_bwa_index = [ [:], file(bwa_index, checkIfExists: true) ]
+        ch_index = [ [:], file(index, checkIfExists: true) ]
     }
 
     //
@@ -50,6 +50,6 @@ workflow PREPARE_GENOME {
 
     emit:
     fasta       = ch_fasta
-    bwa_index   = ch_bwa_index
+    index       = ch_index
     chrom_sizes = ch_chrom_sizes
 }

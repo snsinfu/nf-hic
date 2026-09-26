@@ -14,7 +14,7 @@ include { MERGE_COOLERS as MERGE_REPLICATE  } from '../subworkflows/local/merge_
 workflow HIC {
     take:
     fasta          // path: resolved reference fasta (from --fasta or --genome)
-    bwa_index      // path: resolved aligner index directory (from --bwa_index or --genome); may be null
+    index          // path: resolved aligner index directory (from --bwa_index/--bwamem2_index or --genome); may be null
     chrom_sizes    // path: resolved chrom.sizes (from --chrom_sizes or --genome); may be null
 
     main:
@@ -75,14 +75,14 @@ workflow HIC {
     //
     // Reference preparation
     //
-    PREPARE_GENOME(fasta, bwa_index, chrom_sizes)
+    PREPARE_GENOME(fasta, index, chrom_sizes)
 
     //
     // Per-library alignment, deduplication and contact maps
     //
     LIBRARY_HIC(
         ch_reads,
-        PREPARE_GENOME.out.bwa_index,
+        PREPARE_GENOME.out.index,
         PREPARE_GENOME.out.fasta,
         PREPARE_GENOME.out.chrom_sizes,
         params.bin_size,
