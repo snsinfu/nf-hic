@@ -16,6 +16,7 @@ workflow HIC {
     fasta          // path: resolved reference fasta (from --fasta or --genome)
     index          // path: resolved aligner index directory (from --bwa_index/--bwamem2_index or --genome); may be null
     chrom_sizes    // path: resolved chrom.sizes (from --chrom_sizes or --genome); may be null
+    aligner        // string: selected aligner, e.g. 'bwa' or 'bwa-mem2'
 
     main:
     if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
@@ -25,8 +26,8 @@ workflow HIC {
     if (!fasta) {
         error("Genome fasta file not specified: use --genome <key>, --fasta <file.fa>, or a custom config.")
     }
-    if (!(params.aligner in ['bwa', 'bwa-mem2'])) {
-        error("Invalid --aligner '${params.aligner}'. Use 'bwa' or 'bwa-mem2'.")
+    if (!(aligner in ['bwa', 'bwa-mem2'])) {
+        error("Invalid --aligner '${aligner}'. Use 'bwa' or 'bwa-mem2'.")
     }
     //
     // MAPQ filters: always keep the unfiltered (Q0) set, then add one per requested
@@ -75,7 +76,7 @@ workflow HIC {
     //
     // Reference preparation
     //
-    PREPARE_GENOME(fasta, index, chrom_sizes)
+    PREPARE_GENOME(fasta, index, chrom_sizes, aligner)
 
     //
     // Per-library alignment, deduplication and contact maps

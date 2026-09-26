@@ -13,6 +13,7 @@ workflow PREPARE_GENOME {
     fasta         // path: genome fasta
     index         // path: prebuilt index directory for the selected aligner (optional)
     chrom_sizes   // path: chrom.sizes override (optional)
+    aligner       // string: 'bwa' | 'bwa-mem2' (add a case per new aligner)
 
     main:
     ch_fasta = channel.value(file(fasta, checkIfExists: true))
@@ -21,16 +22,16 @@ workflow PREPARE_GENOME {
     // Build the aligner index if one was not supplied
     //
     if (!index) {
-        if (params.aligner == 'bwa') {
+        if (aligner == 'bwa') {
             BWA_INDEX(ch_fasta.map { item -> [ [:], item ] })
             ch_index = BWA_INDEX.out.index
         }
-        else if (params.aligner == 'bwa-mem2') {
+        else if (aligner == 'bwa-mem2') {
             BWAMEM2_INDEX(ch_fasta.map { item -> [ [:], item ] })
             ch_index = BWAMEM2_INDEX.out.index
         }
         else {
-            error("Invalid --aligner '${params.aligner}'. Use 'bwa' or 'bwa-mem2'.")
+            error("Invalid --aligner '${aligner}'. Use 'bwa' or 'bwa-mem2'.")
         }
     }
     else {

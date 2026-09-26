@@ -7,8 +7,8 @@
 ----------------------------------------------------------------------------------------
 */
 
-include { BWA_MEM      } from '../../../modules/nf-core/bwa/mem'
-include { BWAMEM2_MEM  } from '../../../modules/nf-core/bwamem2/mem'
+include { ALIGN_BWA     } from '../align_bwa'
+include { ALIGN_BWAMEM2 } from '../align_bwamem2'
 
 include { PAIRTOOLS_PARSE  } from '../../../modules/nf-core/pairtools/parse'
 include { PAIRTOOLS_SORT   } from '../../../modules/nf-core/pairtools/sort'
@@ -32,16 +32,18 @@ workflow LIBRARY_HIC {
 
     main:
     //
-    // Align each sequencing run (split runs share the same library id)
+    // Align each sequencing run (split runs share the same library id).
+    // Each aligner is wrapped by an adapter with the same (reads, index, fasta) -> bam
+    // interface, so aligner-specific module signatures stay out of this workflow.
     //
     ch_bam = channel.empty()
     if (params.aligner == 'bwa') {
-        BWA_MEM(ch_reads, ch_index, ch_fasta.map { fasta -> [ [:], fasta ] }, false)
-        ch_bam = BWA_MEM.out.bam
+        ALIGN_BWA(ch_reads, ch_index, ch_fasta)
+        ch_bam = ALIGN_BWA.out.bam
     }
     else {
-        BWAMEM2_MEM(ch_reads, ch_index, ch_fasta.map { fasta -> [ [:], fasta ] }, false)
-        ch_bam = BWAMEM2_MEM.out.bam
+        ALIGN_BWAMEM2(ch_reads, ch_index, ch_fasta)
+        ch_bam = ALIGN_BWAMEM2.out.bam
     }
 
     //

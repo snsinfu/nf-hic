@@ -16,19 +16,13 @@ workflow {
     //
     def fasta       = params.fasta       ?: getGenomeAttribute('fasta')
     def chrom_sizes = params.chrom_sizes ?: getGenomeAttribute('chrom_sizes')
+    def index       = resolveAlignerIndex(params.aligner)
 
     //
     // Index directories are aligner-specific: bwa and bwa-mem2 indexes are not
-    // interchangeable, so each aligner reads its own parameter (and catalog key).
+    // interchangeable, so each aligner reads its own parameter. Warn when the other
+    // aligner's parameter was supplied but is ignored.
     //
-    def index
-    if (params.aligner == 'bwa') {
-        index = params.bwa_index     ?: getGenomeAttribute('bwa')
-    }
-    else {
-        index = params.bwamem2_index ?: getGenomeAttribute('bwamem2')
-    }
-
     if (params.aligner == 'bwa-mem2' && !params.bwamem2_index && params.bwa_index) {
         log.warn("--bwa_index is ignored with --aligner bwa-mem2 (bwa and bwa-mem2 indexes are not interchangeable). Use --bwamem2_index for a precomputed bwa-mem2 index.")
     }
@@ -39,7 +33,7 @@ workflow {
         log.warn("No bwa-mem2 index for genome '${params.genome}' in the catalog; it will be built from the fasta.")
     }
 
-    HIC(fasta, index, chrom_sizes)
+    HIC(fasta, index, chrom_sizes, params.aligner)
 }
 
 /*
@@ -56,6 +50,21 @@ def getGenomeAttribute(attribute) {
         if (params.genomes[params.genome].containsKey(attribute)) {
             return params.genomes[params.genome][attribute]
         }
+    }
+    return null
+}
+
+//
+// Resolve the precomputed index for an aligner. bwa and bwa-mem2 indexes are not
+// interchangeable, so each aligner reads only its own parameter (falling back to its
+// own catalog key). Add a case here when adding a new aligner.
+//
+def resolveAlignerIndex(aligner) {
+    if (aligner == 'bwa') {
+        return params.bwa_index     ?: getGenomeAttribute('bwa')
+    }
+    else if (aligner == 'bwa-mem2') {
+        return params.bwamem2_index ?: getGenomeAttribute('bwamem2')
     }
     return null
 }
