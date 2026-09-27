@@ -10,6 +10,10 @@ include { PREPARE_GENOME                    } from '../subworkflows/local/prepar
 include { LIBRARY_HIC                       } from '../subworkflows/local/library_hic'
 include { MERGE_COOLERS as MERGE_LIBRARY    } from '../subworkflows/local/merge_coolers'
 include { MERGE_COOLERS as MERGE_REPLICATE  } from '../subworkflows/local/merge_coolers'
+include { MERGE_STATS as MERGE_LIBRARY_STATS   } from '../subworkflows/local/merge_stats'
+include { MERGE_STATS as MERGE_REPLICATE_STATS } from '../subworkflows/local/merge_stats'
+include { MERGE_PAIRS as MERGE_LIBRARY_PAIRS   } from '../subworkflows/local/merge_pairs'
+include { MERGE_PAIRS as MERGE_REPLICATE_PAIRS } from '../subworkflows/local/merge_pairs'
 
 workflow HIC {
     take:
@@ -128,4 +132,56 @@ workflow HIC {
         // One bio replicate has nothing to pool: skip it, its .mLb is the sample map
         .filter { _meta, cools -> cools.size() > 1 }
     MERGE_REPLICATE(ch_mrp)
+
+    //
+    // Merged stats: merge pairtools stats per biological replicate, then per sample
+    //
+    if (!params.skip_pairtools_stats) {
+        ch_mlb_stats = LIBRARY_HIC.out.stats
+            .map { meta, stat ->
+                [
+                    [
+                        id            : meta.id,
+                        bio_replicate : meta.bio_replicate,
+                        cool_id       : "${meta.id}_REP${meta.bio_replicate}.mLb"
+                    ],
+                    stat
+                ]
+            }
+            .groupTuple(by: [0])
+        MERGE_LIBRARY_STATS(ch_mlb_stats)
+
+        ch_mrp_stats = MERGE_LIBRARY_STATS.out
+            .map { meta, stat -> [ [ id: meta.id, cool_id: "${meta.id}.mRp" ], stat ] }
+            .groupTuple(by: [0])
+            .filter { _meta, stats -> stats.size() > 1 }
+        MERGE_REPLICATE_STATS(ch_mrp_stats)
+    }
+
+    //
+    // Merged pairs: merge Q0 pairs per biological replicate, then per sample.
+    // Opt-in because pairtools merge is much more expensive than cooler merge.
+    //
+    if (params.merge_pairs) {
+        ch_mlb_pairs = LIBRARY_HIC.out.pairs
+            .filter { meta, _pairs -> meta.mapq == 0 }
+            .map { meta, pairs ->
+                [
+                    [
+                        id            : meta.id,
+                        bio_replicate : meta.bio_replicate,
+                        cool_id       : "${meta.id}_REP${meta.bio_replicate}.mLb"
+                    ],
+                    pairs
+                ]
+            }
+            .groupTuple(by: [0])
+        MERGE_LIBRARY_PAIRS(ch_mlb_pairs)
+
+        ch_mrp_pairs = MERGE_LIBRARY_PAIRS.out
+            .map { meta, pairs -> [ [ id: meta.id, cool_id: "${meta.id}.mRp" ], pairs ] }
+            .groupTuple(by: [0])
+            .filter { _meta, pairs -> pairs.size() > 1 }
+        MERGE_REPLICATE_PAIRS(ch_mrp_pairs)
+    }
 }
