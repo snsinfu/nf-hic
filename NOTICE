@@ -18,6 +18,7 @@ Vendored revision:
 
 Vendored modules:
 
+    modules/nf-core/calder2
     modules/nf-core/bwa/index
     modules/nf-core/bwa/mem
     modules/nf-core/bwamem2/index
