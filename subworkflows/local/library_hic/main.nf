@@ -96,6 +96,7 @@ workflow LIBRARY_HIC {
     emit:
     bam      = PAIRTOOLS_SPLIT.out.bam
     pairs    = PAIRTOOLS_SELECT.out.selected
+    stats    = PAIRTOOLS_DEDUP.out.stat
     cool     = ch_cool
     cool_raw = COOLER_CLOAD.out.cool
     mcool    = COOLER_ZOOMIFY_LIBRARY.out.mcool
