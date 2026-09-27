@@ -26,10 +26,10 @@
                 "pattern": "^\\S+\\.f(ast)?q\\.gz$",
                 "errorMessage": "GZIP-compressed FastQ file for reads 2 must be provided, cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
             },
-            "bio_replicate": {
+            "replicate": {
                 "type": "integer",
-                "meta": ["bio_replicate"],
-                "errorMessage": "bio_replicate must be an integer"
+                "meta": ["replicate"],
+                "errorMessage": "replicate must be an integer"
             },
             "tech_replicate": {
                 "anyOf": [
@@ -45,6 +45,6 @@
                 "errorMessage": "tech_replicate must be an integer (optional, defaults to 1)"
             }
         },
-        "required": ["sample", "fastq_1", "fastq_2", "bio_replicate"]
+        "required": ["sample", "fastq_1", "fastq_2", "replicate"]
     }
 }

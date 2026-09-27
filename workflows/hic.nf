@@ -59,7 +59,7 @@ workflow HIC {
     ch_samplesheet = channel.fromList(samplesheetToList(params.input, "${projectDir}/assets/schema_input.json"))
     ch_rows = ch_samplesheet.map { meta, fastq_1, fastq_2 ->
         def tech    = meta.tech_replicate ?: 1
-        def library = "${meta.id}_REP${meta.bio_replicate}_T${tech}"
+        def library = "${meta.id}_REP${meta.replicate}_T${tech}"
         [ meta + [tech_replicate: tech, library: library, cool_id: library], [ fastq_1, fastq_2 ] ]
     }
 
@@ -103,9 +103,9 @@ workflow HIC {
             [
                 [
                     id             : meta.id,
-                    bio_replicate  : meta.bio_replicate,
+                    replicate      : meta.replicate,
                     mapq           : meta.mapq,
-                    cool_id        : "${meta.id}_REP${meta.bio_replicate}.mLb${suffix}"
+                    cool_id        : "${meta.id}_REP${meta.replicate}.mLb${suffix}"
                 ],
                 cool
             ]
@@ -142,8 +142,8 @@ workflow HIC {
                 [
                     [
                         id            : meta.id,
-                        bio_replicate : meta.bio_replicate,
-                        cool_id       : "${meta.id}_REP${meta.bio_replicate}.mLb"
+                        replicate     : meta.replicate,
+                        cool_id       : "${meta.id}_REP${meta.replicate}.mLb"
                     ],
                     stat
                 ]
@@ -169,8 +169,8 @@ workflow HIC {
                 [
                     [
                         id            : meta.id,
-                        bio_replicate : meta.bio_replicate,
-                        cool_id       : "${meta.id}_REP${meta.bio_replicate}.mLb"
+                        replicate     : meta.replicate,
+                        cool_id       : "${meta.id}_REP${meta.replicate}.mLb"
                     ],
                     pairs
                 ]
