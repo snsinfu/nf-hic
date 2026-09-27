@@ -14,6 +14,8 @@ include { MERGE_STATS as MERGE_LIBRARY_STATS   } from '../subworkflows/local/mer
 include { MERGE_STATS as MERGE_REPLICATE_STATS } from '../subworkflows/local/merge_stats'
 include { MERGE_PAIRS as MERGE_LIBRARY_PAIRS   } from '../subworkflows/local/merge_pairs'
 include { MERGE_PAIRS as MERGE_REPLICATE_PAIRS } from '../subworkflows/local/merge_pairs'
+include { CALDER2_HIC as MERGE_LIBRARY_CALDER2   } from '../subworkflows/local/calder2'
+include { CALDER2_HIC as MERGE_REPLICATE_CALDER2 } from '../subworkflows/local/calder2'
 
 workflow HIC {
     take:
@@ -183,5 +185,22 @@ workflow HIC {
             .groupTuple(by: [0])
             .filter { _meta, pairs -> pairs.size() > 1 }
         MERGE_REPLICATE_PAIRS(ch_mrp_pairs)
+    }
+
+    //
+    // CALDER2 compartments + nested sub-domains (opt-out via --skip_calder2).
+    // Needs a balanced cooler: the CALDER2 CLI dumps pixels with `--balanced`.
+    //
+    if (!params.skip_calder2 && !params.balance) {
+        log.warn "[nf-hic] CALDER2 requires a balanced cooler; skipping because --balance false."
+    }
+    if (!params.skip_calder2 && params.balance) {
+        def calder2_genome = params.calder2_genome ?: params.genome
+        if (!['hg19', 'hg38', 'mm9', 'mm10'].contains(calder2_genome) && !params.calder2_feature_track) {
+            log.warn "[nf-hic] CALDER2 reference '${calder2_genome}' is not a built-in genome " +
+                     "(hg19|hg38|mm9|mm10); provide an A/B phasing track via --calder2_feature_track."
+        }
+        MERGE_LIBRARY_CALDER2(MERGE_LIBRARY.out.mcool, channel.value(params.calder2_resolution))
+        MERGE_REPLICATE_CALDER2(MERGE_REPLICATE.out.mcool, channel.value(params.calder2_resolution))
     }
 }
