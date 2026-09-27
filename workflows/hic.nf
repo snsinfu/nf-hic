@@ -125,5 +125,7 @@ workflow HIC {
             ]
         }
         .groupTuple(by: [0])
+        // One bio replicate has nothing to pool: skip it, its .mLb is the sample map
+        .filter { _meta, cools -> cools.size() > 1 }
     MERGE_REPLICATE(ch_mrp)
 }
