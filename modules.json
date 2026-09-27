@@ -5,11 +5,6 @@
         "https://github.com/nf-core/modules.git": {
             "modules": {
                 "nf-core": {
-                    "calder2": {
-                        "branch": "master",
-                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
-                        "installed_by": ["modules"]
-                    },
                     "bwa/index": {
                         "branch": "master",
                         "git_sha": "efec54255f9baad3ea032173d75031929883bed8",

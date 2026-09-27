@@ -12,10 +12,11 @@ include { HIC } from './workflows/hic'
 workflow {
     //
     // Resolve reference paths from the genome catalog only when not explicitly given,
-    // so CLI/config --fasta/--bwa_index/--bwamem2_index/--chrom_sizes always win.
+    // so CLI/config --fasta/--bwa_index/--bwamem2_index/--chrom_sizes/--gtf always win.
     //
     def fasta       = params.fasta       ?: getGenomeAttribute('fasta')
     def chrom_sizes = params.chrom_sizes ?: getGenomeAttribute('chrom_sizes')
+    def gtf         = params.gtf         ?: getGenomeAttribute('gtf')
     def index       = resolveAlignerIndex(params.aligner)
 
     //
@@ -33,7 +34,7 @@ workflow {
         log.warn("No bwa-mem2 index for genome '${params.genome}' in the catalog; it will be built from the fasta.")
     }
 
-    HIC(fasta, index, chrom_sizes, params.aligner)
+    HIC(fasta, index, chrom_sizes, gtf, params.aligner)
 }
 
 /*

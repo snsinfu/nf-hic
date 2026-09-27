@@ -1,3 +1,6 @@
+# Derived from modules/nf-core/calder2 in nf-core/modules (MIT; author @lucananni93).
+# Local change: an optional `feature_track` input is staged by Nextflow and passed to
+# CALDER via `--feature_track` (A/B phasing for genomes without a built-in reference).
 name: "calder2"
 description: Hierarchical Hi-C compartment computation
 keywords:
@@ -31,6 +34,13 @@ input:
       type: integer
       description: In case a .mcool file is provided, which resolution level to
         use for the analysis
+  - feature_track:
+      type: file
+      description: Optional 4-column BED (chr, start, end, score) used to determine
+        the A/B compartment direction. Must be headerless and positively correlated
+        with the A compartment. Pass an empty list to use CALDER's built-in reference
+        compartments (hg19, hg38, mm9, mm10).
+      pattern: "*.bed"
 output:
   output_folder:
     - - meta:

@@ -10,6 +10,7 @@ process CALDER2 {
     input:
     tuple val(meta), path(cool)
     val resolution
+    path feature_track
 
     output:
     tuple val(meta), path("${prefix}/")                    , emit: output_folder
@@ -25,6 +26,8 @@ process CALDER2 {
     prefix = task.ext.prefix ?: "${meta.id}"
     def suffix = resolution ? "::/resolutions/$resolution" : ""
     def cpus = task.cpus ?: 1
+    // 4-column bed (chr, start, end, score), headerless; absent (`[]`) for built-in genomes
+    def track_arg = feature_track ? "--feature_track ${feature_track}" : ''
     """
     # getting binsize as mandatory input for calder
     binsize="\$(cooler info --field bin-size $cool$suffix)"
@@ -34,7 +37,8 @@ process CALDER2 {
         --nproc $cpus \\
         --type cool \\
         --bin_size "\${binsize}" \\
-        $args
+        $args \\
+        $track_arg
     """
 
     stub:

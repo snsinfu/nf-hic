@@ -18,7 +18,6 @@ Vendored revision:
 
 Vendored modules:
 
-    modules/nf-core/calder2
     modules/nf-core/bwa/index
     modules/nf-core/bwa/mem
     modules/nf-core/bwamem2/index
@@ -34,6 +33,10 @@ Vendored modules:
     modules/nf-core/cooler/cload
     modules/nf-core/cooler/zoomify
     modules/nf-core/cooler/merge
+
+The local module modules/local/calder2/ is derived from the nf-core/modules calder2
+module (MIT) at the revision above. It adds an optional feature_track input so a
+Nextflow-staged A/B phasing BED can be passed to CALDER.
 
 Upstream licence text:
 
