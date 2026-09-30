@@ -3,7 +3,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     nf-hic
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Minimal 4DN-style Hi-C pipeline: bwa/bwa-mem2 + pairtools + cooler.
+    Minimal 4DN-style Hi-C pipeline: bwa/bwa-mem2/bwa-mem3 + pairtools + cooler.
 ----------------------------------------------------------------------------------------
 */
 
@@ -12,7 +12,8 @@ include { HIC } from './workflows/hic'
 workflow {
     //
     // Resolve reference paths from the genome catalog only when not explicitly given,
-    // so CLI/config --fasta/--bwa_index/--bwamem2_index/--chrom_sizes/--gtf always win.
+    // so CLI/config --fasta/--bwa_index/--bwamem2_index/--bwamem3_index/--chrom_sizes/--gtf
+    // always win.
     //
     def fasta       = params.fasta       ?: getGenomeAttribute('fasta')
     def chrom_sizes = params.chrom_sizes ?: getGenomeAttribute('chrom_sizes')
@@ -20,18 +21,25 @@ workflow {
     def index       = resolveAlignerIndex(params.aligner)
 
     //
-    // Index directories are aligner-specific: bwa and bwa-mem2 indexes are not
-    // interchangeable, so each aligner reads its own parameter. Warn when the other
-    // aligner's parameter was supplied but is ignored.
+    // Index directories are aligner-specific: bwa, bwa-mem2 and bwa-mem3 indexes are not
+    // interchangeable, so each aligner reads its own parameter. Warn when another aligner's
+    // parameter was supplied but is ignored.
     //
-    if (params.aligner == 'bwa-mem2' && !params.bwamem2_index && params.bwa_index) {
-        log.warn("--bwa_index is ignored with --aligner bwa-mem2 (bwa and bwa-mem2 indexes are not interchangeable). Use --bwamem2_index for a precomputed bwa-mem2 index.")
+    def index_params = [
+        'bwa'      : [flag: '--bwa_index',     value: params.bwa_index],
+        'bwa-mem2' : [flag: '--bwamem2_index', value: params.bwamem2_index],
+        'bwa-mem3' : [flag: '--bwamem3_index', value: params.bwamem3_index]
+    ]
+    def own_index = index_params[params.aligner]
+    if (own_index && !own_index.value) {
+        index_params.each { name, spec ->
+            if (name != params.aligner && spec.value) {
+                log.warn("${spec.flag} is ignored with --aligner ${params.aligner} (bwa, bwa-mem2 and bwa-mem3 indexes are not interchangeable). Use ${own_index.flag} for a precomputed ${params.aligner} index.")
+            }
+        }
     }
-    if (params.aligner == 'bwa' && !params.bwa_index && params.bwamem2_index) {
-        log.warn("--bwamem2_index is ignored with --aligner bwa. Use --bwa_index for a precomputed bwa index.")
-    }
-    if (params.genome && params.aligner == 'bwa-mem2' && !index) {
-        log.warn("No bwa-mem2 index for genome '${params.genome}' in the catalog; it will be built from the fasta.")
+    if (params.genome && !index) {
+        log.warn("No ${params.aligner} index for genome '${params.genome}' in the catalog; it will be built from the fasta.")
     }
 
     HIC(fasta, index, chrom_sizes, gtf, params.aligner)
@@ -56,7 +64,7 @@ def getGenomeAttribute(attribute) {
 }
 
 //
-// Resolve the precomputed index for an aligner. bwa and bwa-mem2 indexes are not
+// Resolve the precomputed index for an aligner. bwa, bwa-mem2 and bwa-mem3 indexes are not
 // interchangeable, so each aligner reads only its own parameter (falling back to its
 // own catalog key). Add a case here when adding a new aligner.
 //
@@ -66,6 +74,9 @@ def resolveAlignerIndex(aligner) {
     }
     else if (aligner == 'bwa-mem2') {
         return params.bwamem2_index ?: getGenomeAttribute('bwamem2')
+    }
+    else if (aligner == 'bwa-mem3') {
+        return params.bwamem3_index ?: getGenomeAttribute('bwamem3')
     }
     return null
 }

@@ -21,10 +21,10 @@ include { CALDER2_GENE_DENSITY } from '../modules/local/calder2_gene_density'
 workflow HIC {
     take:
     fasta          // path: resolved reference fasta (from --fasta or --genome)
-    index          // path: resolved aligner index directory (from --bwa_index/--bwamem2_index or --genome); may be null
+    index          // path: resolved aligner index directory (from --bwa_index/--bwamem2_index/--bwamem3_index or --genome); may be null
     chrom_sizes    // path: resolved chrom.sizes (from --chrom_sizes or --genome); may be null
     gtf            // path: resolved GTF annotation (from --gtf or --genome); may be null
-    aligner        // string: selected aligner, e.g. 'bwa' or 'bwa-mem2'
+    aligner        // string: selected aligner, e.g. 'bwa', 'bwa-mem2' or 'bwa-mem3'
 
     main:
     if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
@@ -34,8 +34,8 @@ workflow HIC {
     if (!fasta) {
         error("Genome fasta file not specified: use --genome <key>, --fasta <file.fa>, or a custom config.")
     }
-    if (!(aligner in ['bwa', 'bwa-mem2'])) {
-        error("Invalid --aligner '${aligner}'. Use 'bwa' or 'bwa-mem2'.")
+    if (!(aligner in ['bwa', 'bwa-mem2', 'bwa-mem3'])) {
+        error("Invalid --aligner '${aligner}'. Use 'bwa', 'bwa-mem2' or 'bwa-mem3'.")
     }
 
     //

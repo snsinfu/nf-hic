@@ -9,6 +9,7 @@
 
 include { ALIGN_BWA     } from '../align_bwa'
 include { ALIGN_BWAMEM2 } from '../align_bwamem2'
+include { ALIGN_BWAMEM3 } from '../align_bwamem3'
 
 include { PAIRTOOLS_PARSE  } from '../../../modules/nf-core/pairtools/parse'
 include { PAIRTOOLS_SORT   } from '../../../modules/nf-core/pairtools/sort'
@@ -40,6 +41,10 @@ workflow LIBRARY_HIC {
     if (params.aligner == 'bwa') {
         ALIGN_BWA(ch_reads, ch_index, ch_fasta)
         ch_bam = ALIGN_BWA.out.bam
+    }
+    else if (params.aligner == 'bwa-mem3') {
+        ALIGN_BWAMEM3(ch_reads, ch_index, ch_fasta)
+        ch_bam = ALIGN_BWAMEM3.out.bam
     }
     else {
         ALIGN_BWAMEM2(ch_reads, ch_index, ch_fasta)
