@@ -25,6 +25,16 @@
                         "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
                         "installed_by": ["modules"]
                     },
+                    "bwamem3/index": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
+                    "bwamem3/mem": {
+                        "branch": "master",
+                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
+                        "installed_by": ["modules"]
+                    },
                     "samtools/faidx": {
                         "branch": "master",
                         "git_sha": "efec54255f9baad3ea032173d75031929883bed8",

@@ -22,6 +22,8 @@ Vendored modules:
     modules/nf-core/bwa/mem
     modules/nf-core/bwamem2/index
     modules/nf-core/bwamem2/mem
+    modules/nf-core/bwamem3/index
+    modules/nf-core/bwamem3/mem
     modules/nf-core/samtools/faidx
     modules/nf-core/pairtools/parse
     modules/nf-core/pairtools/sort
