@@ -2,7 +2,7 @@ process ONTAD {
     tag "$meta.cool_id ${meta.chrom}"
     label 'process_high'
 
-    container 'ghcr.io/snsinfu/anlin00007-ontad:v1.4-p1'
+    container 'ghcr.io/snsinfu/anlin00007-ontad:v1.4-p2'
 
     input:
     tuple val(meta), path(matrix)
@@ -10,7 +10,7 @@ process ONTAD {
     output:
     tuple val(meta), path("${meta.cool_id}.${meta.chrom}.tad"), emit: tad
     // WARN: OnTAD has no --version flag; keep in sync with the container tag.
-    tuple val("${task.process}"), val('OnTAD'), val('1.4-p1'), emit: versions, topic: versions
+    tuple val("${task.process}"), val('OnTAD'), val('1.4-p2'), emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

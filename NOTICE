@@ -50,7 +50,7 @@ modules/local/ontad_assemble/, together with the helper scripts bin/ontad_*.py, 
 original nf-hic code. They call OnTAD (https://github.com/anlin00007/OnTAD), which is
 distributed under the MIT License. OnTAD is not packaged in bioconda, so
 modules/local/ontad/ runs from the patched v1.4 container image
-ghcr.io/snsinfu/anlin00007-ontad:v1.4-p1.
+ghcr.io/snsinfu/anlin00007-ontad:v1.4-p2.
 
 Upstream licence text:
 
