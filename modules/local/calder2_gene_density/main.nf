@@ -22,12 +22,10 @@ process CALDER2_GENE_DENSITY {
     script:
     def prefix = task.ext.prefix ?: "calder2_gene_density"
     def win = window ?: 100000
-    def cat_cmd = gtf.toString().endsWith('.gz') ? "zcat" : "cat"
     """
-    # Gene bodies (one interval per gene); skip GTF comment lines.
-    ${cat_cmd} ${gtf} | awk -v FS='\\t' -v OFS='\\t' '!/^#/ && \$3 == "gene" { print \$1, \$4-1, \$5 }' \\
-        | sort -k1,1 -k2,2n > genes.tsv
-    test -s genes.tsv || { echo "ERROR: no 'gene' features found in ${gtf}; a gene-level GTF is required for the CALDER2 feature track" >&2; exit 1; }
+    # One gene body per gene: prefer 'gene' features, else collapse features by
+    # gene_id (supports GTFs without 'gene' rows, e.g. UCSC ncbiRefSeq).
+    gtf_to_gene_bodies.sh ${gtf} > genes.tsv
 
     bedtools makewindows -g ${chrom_sizes} -w ${win} > windows.tsv
 

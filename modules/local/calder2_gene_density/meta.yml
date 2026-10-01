@@ -1,0 +1,66 @@
+name: "calder2_gene_density"
+description: Generate a CALDER2 gene-density A/B phasing track from a GTF annotation
+keywords:
+  - calder2
+  - hi-c
+  - gene density
+  - feature track
+tools:
+  - "bedtools":
+      description: "A powerful toolset for genome arithmetic"
+      homepage: "https://bedtools.readthedocs.io/"
+      documentation: "https://bedtools.readthedocs.io/"
+      tool_dev_url: "https://github.com/arq5x/bedtools2"
+      doi: "10.1093/bioinformatics/btq033"
+      licence:
+        - "MIT"
+      identifier: ""
+input:
+  - chrom_sizes:
+      type: file
+      description: Tab-separated chromosome sizes (chromosome, length)
+      pattern: "*.{sizes,txt,tsv}"
+      ontologies: []
+  - gtf:
+      type: file
+      description: |
+        Gene annotation in uncompressed GTF format. Explicit `gene` features are
+        preferred; if absent (e.g. UCSC ncbiRefSeq/ensGene), one gene body per
+        gene is reconstructed by collapsing features on the `gene_id` attribute.
+      pattern: "*.gtf"
+      ontologies: []
+  - window:
+      type: integer
+      description: Window size in bp for the gene-density track (calder2_resolution)
+output:
+  bed:
+    - - "*.bed":
+          type: file
+          description: Headerless 4-column BED (chromosome, start, end, gene count)
+          pattern: "*.bed"
+          ontologies: []
+  versions_bedtools:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - bedtools:
+          type: string
+          description: The name of the tool
+      - bedtools --version | sed -e 's/bedtools v//g':
+          type: eval
+          description: The expression to obtain the version of the tool
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - bedtools:
+          type: string
+          description: The name of the tool
+      - bedtools --version | sed -e 's/bedtools v//g':
+          type: eval
+          description: The expression to obtain the version of the tool
+authors:
+  - "@snsinfu"
+maintainers:
+  - "@snsinfu"
