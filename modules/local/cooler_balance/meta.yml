@@ -1,3 +1,6 @@
+# Derived from modules/nf-core/cooler/balance in nf-core/modules (MIT; authors @nservant, @muffato).
+# Local change: the input cooler is copied to the output path instead of symlinked, so
+# `cooler balance` never modifies its declared input and the task stays idempotent on -resume.
 name: "cooler_balance"
 description: Run matrix balancing on a cool file
 keywords:

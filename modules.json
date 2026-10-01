@@ -75,11 +75,6 @@
                         "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
                         "installed_by": ["modules"]
                     },
-                    "cooler/balance": {
-                        "branch": "master",
-                        "git_sha": "efec54255f9baad3ea032173d75031929883bed8",
-                        "installed_by": ["modules"]
-                    },
                     "cooler/cload": {
                         "branch": "master",
                         "git_sha": "efec54255f9baad3ea032173d75031929883bed8",

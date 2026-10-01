@@ -19,7 +19,7 @@ include { PAIRTOOLS_SPLIT  } from '../../../modules/nf-core/pairtools/split'
 include { PAIRTOOLS_SELECT } from '../../../modules/nf-core/pairtools/select'
 
 include { COOLER_CLOAD  } from '../../../modules/nf-core/cooler/cload'
-include { COOLER_BALANCE } from '../../../modules/nf-core/cooler/balance'
+include { COOLER_BALANCE } from '../../../modules/local/cooler_balance'
 include { COOLER_ZOOMIFY as COOLER_ZOOMIFY_LIBRARY } from '../../../modules/nf-core/cooler/zoomify'
 
 workflow LIBRARY_HIC {

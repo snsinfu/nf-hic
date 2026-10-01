@@ -6,7 +6,7 @@
 */
 
 include { COOLER_MERGE   } from '../../../modules/nf-core/cooler/merge'
-include { COOLER_BALANCE } from '../../../modules/nf-core/cooler/balance'
+include { COOLER_BALANCE } from '../../../modules/local/cooler_balance'
 include { COOLER_ZOOMIFY } from '../../../modules/nf-core/cooler/zoomify'
 
 workflow MERGE_COOLERS {

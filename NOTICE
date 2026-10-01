@@ -31,7 +31,6 @@ Vendored modules:
     modules/nf-core/pairtools/dedup
     modules/nf-core/pairtools/split
     modules/nf-core/pairtools/select
-    modules/nf-core/cooler/balance
     modules/nf-core/cooler/cload
     modules/nf-core/cooler/zoomify
     modules/nf-core/cooler/merge
@@ -39,6 +38,11 @@ Vendored modules:
 The local module modules/local/calder2/ is derived from the nf-core/modules calder2
 module (MIT) at the revision above. It adds an optional feature_track input so a
 Nextflow-staged A/B phasing BED can be passed to CALDER.
+
+The local module modules/local/cooler_balance/ is derived from the nf-core/modules
+cooler/balance module (MIT) at the revision above. It copies the input cooler to the
+output path instead of symlinking it, so balancing never modifies its declared input
+and the task is idempotent on -resume.
 
 Upstream licence text:
 
