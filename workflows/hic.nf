@@ -253,11 +253,11 @@ workflow HIC {
     }
     if (!params.skip_ontad && params.balance) {
         def ontad_metadata = [
-            minsz  : params.ontad_minsz,
-            maxsz  : params.ontad_maxsz,
-            lsize  : params.ontad_lsize,
-            ldiff  : params.ontad_ldiff,
-            penalty: params.ontad_penalty,
+            minsz  : params.ontad_minsz as int,
+            maxsz  : params.ontad_maxsz as int,
+            lsize  : params.ontad_lsize as int,
+            ldiff  : params.ontad_ldiff as double,
+            penalty: params.ontad_penalty as double,
         ]
         MERGE_LIBRARY_ONTAD(MERGE_LIBRARY.out.mcool, PREPARE_GENOME.out.chrom_sizes, params.ontad_resolution, ontad_metadata)
         MERGE_REPLICATE_ONTAD(MERGE_REPLICATE.out.mcool, PREPARE_GENOME.out.chrom_sizes, params.ontad_resolution, ontad_metadata)
