@@ -44,6 +44,14 @@ cooler/balance module (MIT) at the revision above. It copies the input cooler to
 output path instead of symlinking it, so balancing never modifies its declared input
 and the task is idempotent on -resume.
 
+The subworkflow subworkflows/local/ontad/ and the local modules
+modules/local/ontad_dump_matrix/, modules/local/ontad/ and
+modules/local/ontad_assemble/, together with the helper scripts bin/ontad_*.py, are
+original nf-hic code. They call OnTAD (https://github.com/anlin00007/OnTAD), which is
+distributed under the MIT License. OnTAD is not packaged in bioconda, so
+modules/local/ontad/ runs from the patched v1.4 container image
+ghcr.io/snsinfu/anlin00007-ontad:v1.4-p1.
+
 Upstream licence text:
 
     MIT License

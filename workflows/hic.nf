@@ -17,6 +17,8 @@ include { MERGE_PAIRS as MERGE_REPLICATE_PAIRS } from '../subworkflows/local/mer
 include { CALDER2_HIC as MERGE_LIBRARY_CALDER2   } from '../subworkflows/local/calder2'
 include { CALDER2_HIC as MERGE_REPLICATE_CALDER2 } from '../subworkflows/local/calder2'
 include { CALDER2_GENE_DENSITY } from '../modules/local/calder2_gene_density'
+include { ONTAD_HIC as MERGE_LIBRARY_ONTAD   } from '../subworkflows/local/ontad'
+include { ONTAD_HIC as MERGE_REPLICATE_ONTAD } from '../subworkflows/local/ontad'
 
 workflow HIC {
     take:
@@ -240,5 +242,24 @@ workflow HIC {
 
         MERGE_LIBRARY_CALDER2(MERGE_LIBRARY.out.mcool, channel.value(params.calder2_resolution), ch_feature_track)
         MERGE_REPLICATE_CALDER2(MERGE_REPLICATE.out.mcool, channel.value(params.calder2_resolution), ch_feature_track)
+    }
+
+    //
+    // OnTAD hierarchical TADs (opt-out via --skip_ontad). Needs a balanced
+    // cooler: the matrix dump reads the stored balancing weights by default.
+    //
+    if (!params.skip_ontad && !params.balance) {
+        log.warn "[nf-hic] OnTAD requires a balanced cooler; skipping because --balance false."
+    }
+    if (!params.skip_ontad && params.balance) {
+        def ontad_metadata = [
+            minsz  : params.ontad_minsz,
+            maxsz  : params.ontad_maxsz,
+            lsize  : params.ontad_lsize,
+            ldiff  : params.ontad_ldiff,
+            penalty: params.ontad_penalty,
+        ]
+        MERGE_LIBRARY_ONTAD(MERGE_LIBRARY.out.mcool, PREPARE_GENOME.out.chrom_sizes, params.ontad_resolution, ontad_metadata)
+        MERGE_REPLICATE_ONTAD(MERGE_REPLICATE.out.mcool, PREPARE_GENOME.out.chrom_sizes, params.ontad_resolution, ontad_metadata)
     }
 }
