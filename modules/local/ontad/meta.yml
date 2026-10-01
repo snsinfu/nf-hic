@@ -1,0 +1,71 @@
+# OnTAD is not packaged in bioconda, so this module has no conda/environment.yml
+# and runs from a container only. The container is a patched v1.4 build published
+# at ghcr.io/snsinfu/anlin00007-ontad.
+name: "ontad"
+description: Optimized nested TAD caller for Hi-C contact matrices
+keywords:
+  - ontad
+  - hi-c
+  - tad
+  - domain
+  - nested
+tools:
+  - "OnTAD":
+      description: "An optimized nested TAD caller for Hi-C data"
+      homepage: "https://github.com/anlin00007/OnTAD"
+      documentation: "https://github.com/anlin00007/OnTAD"
+      tool_dev_url: "https://github.com/anlin00007/OnTAD"
+      doi: "10.1186/s13059-019-1899-5"
+      licence:
+        - "MIT"
+      identifier: "ontad"
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test', cool_id:'sample_REP1.mLb', chrom:'chr1' ]
+    - matrix:
+        type: file
+        description: Space- or tab-separated dense N*N contact matrix for one chromosome
+        pattern: "*.matrix"
+        ontologies: []
+output:
+  tad:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test', cool_id:'sample_REP1.mLb', chrom:'chr1' ]
+      - ${prefix}.tad:
+          type: file
+          description: |
+            Headerless OnTAD calls: start_bin_id, end_bin_id, tad_level,
+            tad_mean, tad_score (1-based, closed, intra-chromosomal bin ids)
+          pattern: "*.tad"
+          ontologies: []
+  versions_ontad:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - OnTAD:
+          type: string
+          description: The name of the tool
+      - "1.4-p1":
+          type: string
+          description: The version of the container
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - OnTAD:
+          type: string
+          description: The name of the tool
+      - "1.4-p1":
+          type: string
+          description: The version of the container
+authors:
+  - "@snsinfu"
+maintainers:
+  - "@snsinfu"

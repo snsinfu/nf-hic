@@ -1,0 +1,81 @@
+name: "ontad_assemble"
+description: Assemble per-chromosome OnTAD calls into a genome-wide TSV
+keywords:
+  - ontad
+  - hi-c
+  - tad
+  - domain
+  - nested
+  - cooler
+tools:
+  - "cooler":
+      description: Sparse binary format for genomic interaction matrices
+      homepage: https://open2c.github.io/cooler/
+      documentation: https://cooler.readthedocs.io/en/latest/index.html
+      tool_dev_url: https://github.com/open2c/cooler
+      doi: "10.1093/bioinformatics/btz540"
+      licence:
+        - "BSD-3-Clause"
+      identifier: ""
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test', cool_id:'sample_REP1.mLb' ]
+    - cool:
+        type: file
+        description: Path to COOL or MCOOL file used to recover genomic coordinates
+        pattern: "*.{cool,mcool}"
+        ontologies: []
+  - resolution:
+      type: integer
+      description: Resolution to use when the input is an mcool
+  - metadata:
+      type: map
+      description: Key/value metadata written as a single '# {json}' line
+  - tad_files:
+      type: file
+      description: Per-chromosome OnTAD .tad files
+      pattern: "*.tad"
+      ontologies: []
+output:
+  tads:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test', cool_id:'sample_REP1.mLb' ]
+      - ${prefix}.ontad.tsv:
+          type: file
+          description: |
+            TSV: chrom, start, end, start_bin_id, end_bin_id, tad_level,
+            tad_mean, tad_score. start/end are bin midpoints,
+            start_bin_id/end_bin_id are global cooler bin ids.
+          pattern: "*.ontad.tsv"
+          ontologies: []
+  versions_cooler:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - cooler:
+          type: string
+          description: The name of the tool
+      - cooler --version 2>&1 | sed "s/cooler, version //":
+          type: eval
+          description: The expression to obtain the version of the tool
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - cooler:
+          type: string
+          description: The name of the tool
+      - cooler --version 2>&1 | sed "s/cooler, version //":
+          type: eval
+          description: The expression to obtain the version of the tool
+authors:
+  - "@snsinfu"
+maintainers:
+  - "@snsinfu"
