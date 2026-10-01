@@ -109,6 +109,8 @@ def main(
 
     table = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=OUTPUT_COLUMNS)
     table = table[OUTPUT_COLUMNS]
+    # deterministic genomic order (per-chromosome files arrive in arbitrary order)
+    table = table.sort_values(["start_bin_id", "end_bin_id", "tad_level"]).reset_index(drop=True)
 
     record: dict = {}
     if prefix:
