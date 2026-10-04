@@ -56,6 +56,12 @@ def main(
 
     clr = cooler.Cooler(cool)
     bins = clr.bins()[:][["chrom", "start", "end"]].reset_index(drop=True)
+
+    # Cooler stores bin start/end as int32. Promote to int64 to prevent overflow
+    # in coordinate arithmetics on >1Gb chromosomes.
+    bins["start"] = bins["start"].astype("int64")
+    bins["end"] = bins["start"].astype("int64")
+
     bins["bin_index"] = bins.index
 
     frames = []
