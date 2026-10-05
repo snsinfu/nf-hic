@@ -1,17 +1,14 @@
 process BWAMEM2_INDEX {
     tag "$fasta"
     // Local fork of nf-core/modules bwamem2/index @ efec54255f9baad3ea032173d75031929883bed8.
-    // Only the memory directive differs. bwa-mem2 index peak is ~28N (28 bytes per
-    // genome base, 280 MB per 10 Mbp); source:
-    // https://github.com/bwa-mem2/bwa-mem2/issues/9. The `* 4` gzip factor matches
-    // current upstream master. Add a little headroom so the task cgroup sits above
-    // the peak. Use fasta.name.endsWith('.gz') because Path.endsWith is
-    // component-wise.
+    // Only the memory directive differs.
     memory {
+        // Expected memory footprint of the index build: ~28 B per genome base
+        // (*4 when the FASTA is gzipped, *1.1 headroom above the build peak).
         def bases = fasta.size() * (fasta.name.endsWith('.gz') ? 4 : 1)
-        def need  = 28L * bases
-        def headroom = Math.max(1.0 * 1024 ** 3, 0.10 * need)
-        ((need + headroom) * task.attempt).toLong().B
+        def expected = (28L * bases).B * 1.1
+        def baseLimit = [expected, 64.GB].max()
+        (baseLimit * task.attempt)
     }
 
     conda "${moduleDir}/environment.yml"
