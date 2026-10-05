@@ -1,6 +1,17 @@
 process BWAMEM2_MEM {
     tag "${meta.id}"
-    label 'process_high'
+    // Local fork of nf-core/modules bwamem2/mem @ efec54255f9baad3ea032173d75031929883bed8.
+    // Only the resource directives differ: the `process_high` label is replaced so
+    // the inline `memory` is not overridden by `withLabel:process_high` (config
+    // selectors outrank process-body directives). cpus/time keep the old values.
+    cpus { 12 * task.attempt }
+    time { 16.h * task.attempt }
+    // bwa-mem2 mem holds the on-disk index resident, including the unpacked .0123.
+    // meta2.index_bytes is the footprint computed by the align adapter.
+    memory {
+        def resident = meta2.index_bytes ?: 0L
+        (((resident * 1.15) + 2.0 * 1024 ** 3) * task.attempt).toLong().B
+    }
 
     conda "${moduleDir}/environment.yml"
     container "${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container

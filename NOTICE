@@ -20,8 +20,6 @@ Vendored modules:
 
     modules/nf-core/bwa/index
     modules/nf-core/bwa/mem
-    modules/nf-core/bwamem2/mem
-    modules/nf-core/bwamem3/mem
     modules/nf-core/samtools/faidx
     modules/nf-core/pairtools/parse
     modules/nf-core/pairtools/sort
@@ -46,6 +44,11 @@ The local modules modules/local/bwamem2_index/ and modules/local/bwamem3_index/ 
 derived from the nf-core/modules bwamem2/index and bwamem3/index modules (MIT) at the
 revision above. They replace the memory directive with a reference-size model plus
 headroom (bwa-mem3 uses its documented 16/24 bytes per genome base).
+
+The local modules modules/local/bwamem2_mem/ and modules/local/bwamem3_mem/ are
+derived from the nf-core/modules bwamem2/mem and bwamem3/mem modules (MIT) at the
+revision above. They replace the process_high label with an inline memory directive
+that scales with the staged index size, because mem holds the index resident.
 
 The subworkflow subworkflows/local/ontad/ and the local modules
 modules/local/ontad_dump_matrix/, modules/local/ontad/ and

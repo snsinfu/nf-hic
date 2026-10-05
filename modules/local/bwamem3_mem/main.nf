@@ -1,6 +1,19 @@
 process BWAMEM3_MEM {
     tag "${meta.id}"
-    label 'process_high'
+    // Local fork of nf-core/modules bwamem3/mem @ efec54255f9baad3ea032173d75031929883bed8.
+    // Only the resource directives differ: the `process_high` label is replaced so
+    // the inline `memory` is not overridden by `withLabel:process_high` (config
+    // selectors outrank process-body directives). cpus/time keep the old values.
+    cpus { 12 * task.attempt }
+    time { 16.h * task.attempt }
+    // bwa-mem3 mem holds the on-disk index resident (~10.5 GiB for the ~11 GB hg38
+    // index; an axolotl WGS run peaked at ~110 GiB RSS). meta2.index_bytes is the
+    // footprint computed by the align adapter (excluding .0123, which mem never
+    // reads). Budget ~15% over the footprint plus 2 GB.
+    memory {
+        def resident = meta2.index_bytes ?: 0L
+        (((resident * 1.15) + 2.0 * 1024 ** 3) * task.attempt).toLong().B
+    }
 
     conda "${moduleDir}/environment.yml"
     container "${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container

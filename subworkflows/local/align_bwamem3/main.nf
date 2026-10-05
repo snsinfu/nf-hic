@@ -7,7 +7,7 @@
 ----------------------------------------------------------------------------------------
 */
 
-include { BWAMEM3_MEM } from '../../../modules/nf-core/bwamem3/mem'
+include { BWAMEM3_MEM } from '../../../modules/local/bwamem3_mem'
 
 workflow ALIGN_BWAMEM3 {
     take:
@@ -16,8 +16,16 @@ workflow ALIGN_BWAMEM3 {
     fasta      // channel: path(fasta)
 
     main:
+    // mem holds the index resident, so pass its on-disk footprint to the process
+    // (computed here: a path input is a relative staged name inside a dynamic
+    // directive). bwa-mem3 pac-fetches from .pac and never reads .0123.
+    ch_index = index.map { m, idx ->
+        def resident = 0L
+        idx.toFile().eachFileRecurse { f -> if (f.isFile() && !f.name.endsWith('.0123')) resident += f.length() }
+        [ m + [index_bytes: resident], idx ]
+    }
     // nf-core aligner modules expect the fasta as a [ meta, fasta ] tuple
-    BWAMEM3_MEM(reads, index, fasta.map { fasta_path -> [ [:], fasta_path ] }, false)
+    BWAMEM3_MEM(reads, ch_index, fasta.map { fasta_path -> [ [:], fasta_path ] }, false)
 
     emit:
     // nf-core bwamem3/mem emits the alignment under `aligned` (*.bam here), not `bam`
