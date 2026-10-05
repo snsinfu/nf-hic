@@ -6,11 +6,11 @@ process BWAMEM2_MEM {
     // selectors outrank process-body directives). cpus/time keep the old values.
     cpus { 12 * task.attempt }
     time { 16.h * task.attempt }
-    // bwa-mem2 mem holds the on-disk index resident, including the unpacked .0123.
-    // meta2.index_bytes is the footprint computed by the align adapter.
     memory {
-        def resident = meta2.index_bytes ?: 0L
-        (((resident * 1.15) + 2.0 * 1024 ** 3) * task.attempt).toLong().B
+        // Expected memory footprint of the staged index.
+        def expected = (meta2.index_bytes ?: 0L).B * 1.2
+        def baseLimit = [expected, 48.GB].max()
+        (baseLimit * task.attempt)
     }
 
     conda "${moduleDir}/environment.yml"
