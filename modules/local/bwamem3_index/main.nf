@@ -1,7 +1,19 @@
 process BWAMEM3_INDEX {
     tag "${meta.id}"
-    // NOTE bwa-mem3 builds an FM-index with libsais; peak memory scales with the reference size.
-    memory { 280.MB * Math.ceil(fasta.size() / 10000000) * task.attempt }
+    // Local fork of nf-core/modules bwamem3/index @ efec54255f9baad3ea032173d75031929883bed8.
+    // Only the memory directive differs. bwa-mem3 0.8.0 index peak: 8 bytes per
+    // base of doubled text (= 16 B/genome-base) below ~1.07 Gbp (32-bit SA), else
+    // 12 bytes per doubled base (= 24 B/genome-base). Source:
+    // https://bwa-mem3.readthedocs.io/en/latest/user-guide/indexing.html
+    // The tool budgets --max-memory as detected RAM less min(max(2GB, 5%), 50%)
+    // and rejects the build up front when that is below the requirement, so
+    // request the requirement plus headroom.
+    memory {
+        def bases = fasta.size() * (fasta.name.endsWith('.gz') ? 4 : 1)
+        def need  = (bases < 1070000000L ? 16L : 24L) * bases
+        def headroom = Math.max(2.5 * 1024 ** 3, 0.10 * need)
+        ((need + headroom) * task.attempt).toLong().B
+    }
 
     conda "${moduleDir}/environment.yml"
     container "${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container

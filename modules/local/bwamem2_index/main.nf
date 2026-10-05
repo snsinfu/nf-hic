@@ -1,8 +1,18 @@
 process BWAMEM2_INDEX {
     tag "$fasta"
-    // NOTE Requires 28N GB memory where N is the size of the reference sequence, floor of 280M
-    // source: https://github.com/bwa-mem2/bwa-mem2/issues/9
-    memory { 280.MB * Math.ceil(fasta.size() / 10000000) * task.attempt }
+    // Local fork of nf-core/modules bwamem2/index @ efec54255f9baad3ea032173d75031929883bed8.
+    // Only the memory directive differs. bwa-mem2 index peak is ~28N (28 bytes per
+    // genome base, 280 MB per 10 Mbp); source:
+    // https://github.com/bwa-mem2/bwa-mem2/issues/9. The `* 4` gzip factor matches
+    // current upstream master. Add a little headroom so the task cgroup sits above
+    // the peak. Use fasta.name.endsWith('.gz') because Path.endsWith is
+    // component-wise.
+    memory {
+        def bases = fasta.size() * (fasta.name.endsWith('.gz') ? 4 : 1)
+        def need  = 28L * bases
+        def headroom = Math.max(1.0 * 1024 ** 3, 0.10 * need)
+        ((need + headroom) * task.attempt).toLong().B
+    }
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?

@@ -20,9 +20,7 @@ Vendored modules:
 
     modules/nf-core/bwa/index
     modules/nf-core/bwa/mem
-    modules/nf-core/bwamem2/index
     modules/nf-core/bwamem2/mem
-    modules/nf-core/bwamem3/index
     modules/nf-core/bwamem3/mem
     modules/nf-core/samtools/faidx
     modules/nf-core/pairtools/parse
@@ -43,6 +41,11 @@ The local module modules/local/cooler_balance/ is derived from the nf-core/modul
 cooler/balance module (MIT) at the revision above. It copies the input cooler to the
 output path instead of symlinking it, so balancing never modifies its declared input
 and the task is idempotent on -resume.
+
+The local modules modules/local/bwamem2_index/ and modules/local/bwamem3_index/ are
+derived from the nf-core/modules bwamem2/index and bwamem3/index modules (MIT) at the
+revision above. They replace the memory directive with a reference-size model plus
+headroom (bwa-mem3 uses its documented 16/24 bytes per genome base).
 
 The subworkflow subworkflows/local/ontad/ and the local modules
 modules/local/ontad_dump_matrix/, modules/local/ontad/ and

@@ -5,8 +5,8 @@
 */
 
 include { BWA_INDEX      } from '../../../modules/nf-core/bwa/index'
-include { BWAMEM2_INDEX  } from '../../../modules/nf-core/bwamem2/index'
-include { BWAMEM3_INDEX  } from '../../../modules/nf-core/bwamem3/index'
+include { BWAMEM2_INDEX  } from '../../../modules/local/bwamem2_index'
+include { BWAMEM3_INDEX  } from '../../../modules/local/bwamem3_index'
 include { SAMTOOLS_FAIDX } from '../../../modules/nf-core/samtools/faidx'
 
 workflow PREPARE_GENOME {
