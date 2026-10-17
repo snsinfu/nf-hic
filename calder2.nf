@@ -120,7 +120,9 @@ workflow {
             channel.value(file(gtf, checkIfExists: true)),
             channel.value(params.calder2_resolution)
         )
-        ch_feature_track = CALDER2_GENE_DENSITY.out.bed.first()
+        // All inputs are value channels, so the output is a single-value channel;
+        // no `.first()` needed (it would log "operator `first` is useless").
+        ch_feature_track = CALDER2_GENE_DENSITY.out.bed
     }
     else {
         ch_feature_track = channel.value([])
