@@ -12,9 +12,10 @@ workflow CALDER2_HIC {
     resolution         // integer: resolution group inside the .mcool
     ch_feature_track   // channel: path(bed) or [] (empty = use CALDER's built-in reference)
     save_intermediates // boolean: keep and publish the full intermediate_data/ folder
+    nproc              // integer: >0 overrides CALDER --nproc; 0 = task.cpus
 
     main:
-    CALDER2(ch_cool, resolution, ch_feature_track, save_intermediates)
+    CALDER2(ch_cool, resolution, ch_feature_track, save_intermediates, nproc)
 
     emit:
     CALDER2.out.output_folder

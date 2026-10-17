@@ -12,6 +12,7 @@ process CALDER2 {
     val resolution
     path feature_track
     val save_intermediates
+    val nproc
 
     output:
     tuple val(meta), path("${prefix}/")                    , emit: output_folder
@@ -26,7 +27,12 @@ process CALDER2 {
     def args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
     def suffix = resolution ? "::/resolutions/$resolution" : ""
-    def cpus = task.cpus ?: 1
+    // CALDER2's --nproc registers doParallel workers; each worker holds one
+    // chromosome's contact matrix, so peak RAM scales with nproc. 0 = auto:
+    // keep the process CPU request. A positive --calder2_nproc caps it to
+    // avoid OOM on large/dense chromosomes.
+    def n = nproc ? (nproc as int) : 0
+    def cpus = n > 0 ? n : (task.cpus ?: 1)
     // 4-column bed (chr, start, end, score), headerless; absent (`[]`) for built-in genomes
     def track_arg = feature_track ? "--feature_track ${feature_track}" : ''
     def save_arg = save_intermediates ? '--save-intermediates' : ''

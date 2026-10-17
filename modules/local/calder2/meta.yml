@@ -41,6 +41,13 @@ input:
         with the A compartment. Pass an empty list to use CALDER's built-in reference
         compartments (hg19, hg38, mm9, mm10).
       pattern: "*.bed"
+  - save_intermediates:
+      type: boolean
+      description: Keep and publish the full intermediate_data/ folder (large); logs/ are always published.
+  - nproc:
+      type: integer
+      description: Number of cores passed to CALDER2 --nproc. 0 (default) uses the process
+        CPU request (task.cpus). Lower it to reduce peak memory on large/dense chromosomes.
 output:
   output_folder:
     - - meta:
