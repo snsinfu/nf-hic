@@ -128,7 +128,7 @@ workflow {
         ch_feature_track = channel.value([])
     }
 
-    CALDER2_HIC(ch_cool, channel.value(params.calder2_resolution), ch_feature_track)
+    CALDER2_HIC(ch_cool, channel.value(params.calder2_resolution), ch_feature_track, channel.value(params.save_calder2_intermediates))
 }
 
 /*
