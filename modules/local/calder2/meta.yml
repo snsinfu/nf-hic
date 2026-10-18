@@ -57,7 +57,8 @@ output:
       - ${prefix}/:
           type: directory
           description: Output folder containing sub-compartment (.tsv/.bed) and
-            domain boundaries calls (.bed)
+            domain boundaries calls (.bed). Coordinates are 0-based half-open
+            (CALDER2's 1-based output is normalized by bin/calder2_postprocess.py).
   intermediate_data_folder:
     - - meta:
           type: map
