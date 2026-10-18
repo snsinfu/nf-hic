@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Post-process a CALDER2 output folder.
 
-Two jobs:
+Three jobs:
 
 1. **Chromosome-name remap.** CALDER2 strips a leading lowercase ``chr`` from
    every chromosome (``scripts/calder`` ``sanitize_chroms``) and then
@@ -23,6 +23,12 @@ Two jobs:
    chrom table) so a silent failure leaves evidence. The full
    ``intermediate_data/`` (pixel dumps + ``.Rds``) is dropped unless
    ``--save-intermediates`` is given.
+
+3. **Coordinate normalization.** CALDER2 writes 1-based, fully-closed intervals
+   (``pos_start=(bin-1)*size+1``, ``pos_end=bin*size``; nested/domain boundaries
+   use ``end_pos*size`` as a point). BED/TSV consumers expect 0-based half-open,
+   so the start columns are decremented. The end coordinate is identical under
+   both conventions, so it is left unchanged.
 """
 
 import argparse
@@ -52,6 +58,25 @@ INTERMEDIATE_CHROM_SUFFIXES = (
     "_domain_boundaries.bed",
     "_nested_boundaries.bed",
 )
+
+# CALDER2 writes 1-based, fully-closed coordinates (pos_start=(bin-1)*size+1,
+# pos_end=bin*size). BED/TSV consumers expect 0-based half-open. The end
+# coordinate is the same under both conventions, so only the "start" columns
+# are decremented. Columns are 1-based.
+START_COLUMNS_BED_RANGE = (2, 7)   # all_sub_compartments.bed, chr*_sub_compartments.bed (start + thickStart)
+START_COLUMNS_BED_POINT = (2, 6)   # all_nested_boundaries.bed, chr*_domain_boundaries.bed, chr*_nested_boundaries.bed
+START_COLUMNS_TSV_RANGE = (2,)     # all_sub_compartments.tsv, chr*_domain_hierachy.tsv
+
+
+def coordinate_start_columns(fname):
+    """1-based start columns to make 0-based, chosen by output file name."""
+    if fname.endswith(".tsv"):
+        return START_COLUMNS_TSV_RANGE
+    if fname.endswith(("_domain_boundaries.bed", "_nested_boundaries.bed")):
+        return START_COLUMNS_BED_POINT
+    if fname.endswith("_sub_compartments.bed"):
+        return START_COLUMNS_BED_RANGE
+    return ()
 
 
 def calder_name(orig):
@@ -83,8 +108,19 @@ def build_name_map(chroms):
     return name_map
 
 
-def remap_first_column(path, name_map):
-    """Rewrite the first tab-separated field of *path* if it is a CALDER name."""
+def _as_int(value):
+    """Return int(value) for an integer-valued number, else None (headers, text)."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return int(number) if number.is_integer() else None
+
+
+def rewrite_table(path, name_map, start_columns=()):
+    """Rewrite *path* in place: remap CALDER chrom names and convert 1-based
+    start columns to 0-based half-open. Non-integer cells (header rows) and
+    missing cells are left unchanged."""
     if not os.path.isfile(path):
         return False
     changed = False
@@ -95,6 +131,13 @@ def remap_first_column(path, name_map):
             if fields and fields[0] in name_map:
                 fields[0] = name_map[fields[0]]
                 changed = True
+            for col in start_columns:
+                i = col - 1
+                if i < len(fields):
+                    number = _as_int(fields[i])
+                    if number is not None:
+                        fields[i] = str(number - 1)
+                        changed = True
             out_lines.append("\t".join(fields))
     if not changed:
         return False
@@ -109,7 +152,8 @@ def remap_intermediate_files(intermediate_dir, name_map):
     for root, _dirs, files in os.walk(intermediate_dir):
         for fname in files:
             if fname.endswith(INTERMEDIATE_CHROM_SUFFIXES):
-                remap_first_column(os.path.join(root, fname), name_map)
+                rewrite_table(os.path.join(root, fname), name_map,
+                              coordinate_start_columns(fname))
 
 
 def remap_log_filename(fname, name_map):
@@ -174,8 +218,9 @@ def main():
     os.makedirs(logs_dir, exist_ok=True)
 
     for rel in FINAL_CHROM_FILES:
-        if remap_first_column(os.path.join(outdir, rel), name_map):
-            LOG.info("Remapped chromosome names in %s", rel)
+        path = os.path.join(outdir, rel)
+        if rewrite_table(path, name_map, coordinate_start_columns(os.path.basename(rel))):
+            LOG.info("Rewrote %s (chrom names / 0-based coordinates)", rel)
 
     if os.path.isdir(intermediate_dir):
         copy_diagnostics(intermediate_dir, logs_dir)

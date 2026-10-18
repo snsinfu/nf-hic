@@ -33,6 +33,7 @@ def _load():
 class NormalizeCoordinatesTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
         self.outdir = self.tmp.name
         os.makedirs(os.path.join(self.outdir, "sub_compartments"))
         os.makedirs(os.path.join(self.outdir, "sub_domains"))
