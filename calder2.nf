@@ -37,6 +37,20 @@
  * file's /resolutions group. Outputs are published per input base name to
  * <outdir>/calder2/<cool_id>/{sub_compartments,sub_domains}/.
  *
+ * The A/B phasing track is shared by default but can be overridden per input.
+ * With --calder2_feature_track, keys are the .mcool base names:
+ *
+ *   --calder2_feature_track 'shared.bed,sampleA=A.bed,sampleB=B.bed'
+ *
+ * or, from a -params-file, a map with '*' as the shared fallback:
+ *
+ *   calder2_feature_track:
+ *     '*': shared.bed
+ *     sampleA: A.bed
+ *
+ * Precedence: per-sample > shared > auto gene density > CALDER's built-in reference.
+ * See CALDER2_FEATURE_TRACK for the exact syntax.
+ *
  * Values that start with '-' (e.g. --calder2_args '--adaptive') need the
  * --option=value form, otherwise Nextflow's CLI reads them as options.
  *
@@ -45,7 +59,7 @@
  */
 
 include { CALDER2_HIC } from './subworkflows/local/calder2'
-include { CALDER2_GENE_DENSITY } from './modules/local/calder2_gene_density'
+include { CALDER2_FEATURE_TRACK; CALDER2_ATTACH_TRACK } from './subworkflows/local/calder2_feature_track'
 
 workflow {
     if (!params.calder2_mcool) {
@@ -88,51 +102,36 @@ workflow {
         .flatMap { entries -> entries }
 
     //
-    // CALDER2 A/B phasing track. Precedence:
-    //   1. explicit --calder2_feature_track
-    //   2. auto-generated gene density (non-built-in genome; needs --gtf and --chrom_sizes)
-    //   3. none -> CALDER's built-in reference compartments (hg19|hg38|mm9|mm10)
+    // CALDER2 A/B phasing track. CALDER2_FEATURE_TRACK resolves the default and
+    // CALDER2_ATTACH_TRACK applies this precedence per input (key = mcool base name):
+    //   1. per-sample --calder2_feature_track entry
+    //   2. shared --calder2_feature_track entry
+    //   3. auto-generated gene density (non-built-in genome; needs --gtf and --chrom_sizes)
+    //   4. none -> CALDER's built-in reference compartments (hg19|hg38|mm9|mm10)
     //
     def calder2_genome  = params.calder2_genome ?: params.genome
     def calder2_builtin = ['hg19', 'hg38', 'mm9', 'mm10'].contains(calder2_genome)
+    def chrom_sizes     = params.chrom_sizes ?: getGenomeAttribute('chrom_sizes')
+    def gtf             = params.gtf         ?: getGenomeAttribute('gtf')
 
-    def ch_feature_track = channel.empty()
-    if (params.calder2_feature_track) {
-        if (calder2_builtin) {
-            log.warn "[nf-hic] --calder2_feature_track overrides CALDER's built-in reference for '${calder2_genome}' " +
-                     "(CALDER treats the genome as 'others'; the built-in reference is not used)."
-        }
-        ch_feature_track = channel.value(file(params.calder2_feature_track, checkIfExists: true))
-    }
-    else if (!calder2_builtin) {
-        def chrom_sizes = params.chrom_sizes ?: getGenomeAttribute('chrom_sizes')
-        def gtf         = params.gtf         ?: getGenomeAttribute('gtf')
-        if (!gtf) {
-            error("CALDER2 A/B phasing for genome '${calder2_genome}' needs a gene-density track, but no GTF annotation was found. " +
-                  "Use --gtf <genes.gtf> or a --genome with a 'gtf' catalog entry.")
-        }
-        if (!chrom_sizes) {
-            error("CALDER2 A/B phasing for genome '${calder2_genome}' needs --chrom_sizes to generate a gene-density track. " +
-                  "Use --chrom_sizes <chrom.sizes> or a --genome with a 'chrom_sizes' catalog entry.")
-        }
-        CALDER2_GENE_DENSITY(
-            channel.value(file(chrom_sizes, checkIfExists: true)),
-            channel.value(file(gtf, checkIfExists: true)),
-            channel.value(params.calder2_resolution)
-        )
-        // All inputs are value channels, so the output is a single-value channel;
-        // no `.first()` needed (it would log "operator `first` is useless").
-        ch_feature_track = CALDER2_GENE_DENSITY.out.bed
-    }
-    else {
-        ch_feature_track = channel.value([])
-    }
+    CALDER2_FEATURE_TRACK(
+        params.calder2_feature_track,
+        calder2_genome,
+        calder2_builtin,
+        gtf,
+        chrom_sizes ? channel.value(file(chrom_sizes, checkIfExists: true)) : null,
+        params.calder2_resolution
+    )
 
-    // The track is part of the cooler tuple; wrap `[]` (built-in reference) so
-    // combine keeps it as one value instead of expanding it as an empty list.
-    ch_cool_calder = ch_cool
-        .combine(ch_feature_track.map { track -> [track: track] })
-        .map { meta, cool, wrapped -> [meta, cool, wrapped.track] }
+    ch_known_sample_ids = ch_cool.map { meta, _cool -> meta.id }.toList()
+
+    ch_cool_calder = CALDER2_ATTACH_TRACK(
+        ch_cool,
+        CALDER2_FEATURE_TRACK.out.track,
+        CALDER2_FEATURE_TRACK.out.per_sample,
+        ch_known_sample_ids,
+        true
+    )
 
     CALDER2_HIC(ch_cool_calder, channel.value(params.calder2_resolution), channel.value(params.save_calder2_intermediates), channel.value(params.calder2_nproc as int))
 }
