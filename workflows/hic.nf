@@ -16,7 +16,7 @@ include { MERGE_PAIRS as MERGE_LIBRARY_PAIRS   } from '../subworkflows/local/mer
 include { MERGE_PAIRS as MERGE_REPLICATE_PAIRS } from '../subworkflows/local/merge_pairs'
 include { CALDER2_HIC as MERGE_LIBRARY_CALDER2   } from '../subworkflows/local/calder2'
 include { CALDER2_HIC as MERGE_REPLICATE_CALDER2 } from '../subworkflows/local/calder2'
-include { CALDER2_GENE_DENSITY } from '../modules/local/calder2_gene_density'
+include { CALDER2_FEATURE_TRACK; CALDER2_ATTACH_TRACK } from '../subworkflows/local/calder2_feature_track'
 include { ONTAD_HIC as MERGE_LIBRARY_ONTAD   } from '../subworkflows/local/ontad'
 include { ONTAD_HIC as MERGE_REPLICATE_ONTAD } from '../subworkflows/local/ontad'
 
@@ -41,19 +41,16 @@ workflow HIC {
     }
 
     //
-    // CALDER2 A/B phasing reference. Precedence:
-    //   1. explicit --calder2_feature_track
-    //   2. auto-generated gene density (non-built-in genome; requires a GTF)
-    //   3. none -> CALDER's built-in reference compartments (hg19|hg38|mm9|mm10)
+    // CALDER2 A/B phasing reference. CALDER2_FEATURE_TRACK resolves the default and
+    // CALDER2_ATTACH_TRACK applies this precedence per sample:
+    //   1. per-sample --calder2_feature_track entry
+    //   2. shared --calder2_feature_track entry
+    //   3. auto-generated gene density (non-built-in genome; requires a GTF)
+    //   4. none -> CALDER's built-in reference compartments (hg19|hg38|mm9|mm10)
     //
     def calder2_genome  = params.calder2_genome ?: params.genome
     def calder2_builtin = ['hg19', 'hg38', 'mm9', 'mm10'].contains(calder2_genome)
     def calder2_enabled = !params.skip_calder2 && params.balance
-    def autogen_track   = calder2_enabled && !calder2_builtin && !params.calder2_feature_track
-    if (autogen_track && !gtf) {
-        error("CALDER2 A/B phasing for genome '${calder2_genome}' needs a gene-density track, but no GTF annotation was found. " +
-              "Use --gtf <genes.gtf> or a --genome with a 'gtf' catalog entry.")
-    }
 
     //
     // MAPQ filters: always keep the unfiltered (Q0) set, then add one per requested
@@ -216,38 +213,36 @@ workflow HIC {
     }
     if (calder2_enabled) {
         //
-        // Resolve the A/B phasing track: explicit --calder2_feature_track > auto gene density
-        // (non-built-in genome) > [] (CALDER's built-in reference for hg19|hg38|mm9|mm10).
-        // The track is a declared module input, so Nextflow stages it into the task.
+        // Resolve the default track once, then attach it (or a per-sample override) to
+        // every cooler. CALDER2_GENE_DENSITY runs at most once for both merge levels.
         //
-        def ch_feature_track = channel.empty()
-        if (params.calder2_feature_track) {
-            if (calder2_builtin) {
-                log.warn "[nf-hic] --calder2_feature_track overrides CALDER's built-in reference for '${calder2_genome}' " +
-                         "(CALDER treats the genome as 'others'; the built-in reference is not used)."
-            }
-            ch_feature_track = channel.value(file(params.calder2_feature_track, checkIfExists: true))
-        }
-        else if (autogen_track) {
-            CALDER2_GENE_DENSITY(
-                PREPARE_GENOME.out.chrom_sizes,
-                channel.value(file(gtf, checkIfExists: true)),
-                channel.value(params.calder2_resolution)
-            )
-            ch_feature_track = CALDER2_GENE_DENSITY.out.bed.first()
-        }
-        else {
-            ch_feature_track = channel.value([])
-        }
+        CALDER2_FEATURE_TRACK(
+            params.calder2_feature_track,
+            calder2_genome,
+            calder2_builtin,
+            gtf,
+            PREPARE_GENOME.out.chrom_sizes,
+            params.calder2_resolution
+        )
 
-        // The track is part of the cooler tuple; wrap `[]` (built-in reference) so
-        // combine keeps it as one value instead of expanding it as an empty list.
-        ch_mlb_calder = MERGE_LIBRARY.out.mcool
-            .combine(ch_feature_track.map { track -> [track: track] })
-            .map { meta, cool, wrapped -> [meta, cool, wrapped.track] }
-        ch_mrp_calder = MERGE_REPLICATE.out.mcool
-            .combine(ch_feature_track.map { track -> [track: track] })
-            .map { meta, cool, wrapped -> [meta, cool, wrapped.track] }
+        // L1 has one item per sample, so it supplies the ids used to warn on typos in
+        // per-sample keys. L2 is a subset (single-bio samples have no L2 map).
+        ch_known_sample_ids = MERGE_LIBRARY.out.mcool.map { meta, _cool -> meta.id }.toList()
+
+        ch_mlb_calder = CALDER2_ATTACH_TRACK(
+            MERGE_LIBRARY.out.mcool,
+            CALDER2_FEATURE_TRACK.out.track,
+            CALDER2_FEATURE_TRACK.out.per_sample,
+            ch_known_sample_ids,
+            true
+        )
+        ch_mrp_calder = CALDER2_ATTACH_TRACK(
+            MERGE_REPLICATE.out.mcool,
+            CALDER2_FEATURE_TRACK.out.track,
+            CALDER2_FEATURE_TRACK.out.per_sample,
+            ch_known_sample_ids,
+            false
+        )
 
         MERGE_LIBRARY_CALDER2(ch_mlb_calder, channel.value(params.calder2_resolution), channel.value(params.save_calder2_intermediates), channel.value(params.calder2_nproc as int))
         MERGE_REPLICATE_CALDER2(ch_mrp_calder, channel.value(params.calder2_resolution), channel.value(params.save_calder2_intermediates), channel.value(params.calder2_nproc as int))

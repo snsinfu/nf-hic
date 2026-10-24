@@ -140,6 +140,7 @@ workflow CALDER2_ATTACH_TRACK {
     ch_default          // path(bed) or [] (value channel)
     ch_per_sample       // Map value channel: sample id -> path(bed)
     ch_known_ids        // list of valid sample ids (value channel)
+    warn_unknown        // boolean: warn about unknown keys (only when ch_known_ids covers all samples)
 
     main:
     // Wrap the default and the id list in maps so an empty track ([]) stays a single
@@ -149,11 +150,13 @@ workflow CALDER2_ATTACH_TRACK {
         .combine(ch_per_sample)
         .combine(ch_known_ids.map { ids -> [ids: ids] })
         .map { wrapped, perSample, knownWrapper ->
-            def known = knownWrapper.ids as Set
-            def unknown = perSample.keySet().findAll { key -> !(key in known) }
-            if (unknown) {
-                log.warn "[nf-hic] --calder2_feature_track key(s) ${unknown.join(', ')} " +
-                         "do not match any sample id; they are ignored."
+            if (warn_unknown) {
+                def known = knownWrapper.ids as Set
+                def unknown = perSample.keySet().findAll { key -> !(key in known) }
+                if (unknown) {
+                    log.warn "[nf-hic] --calder2_feature_track key(s) ${unknown.join(', ')} " +
+                             "do not match any sample id; they are ignored."
+                }
             }
             [fallback: wrapped.fallback, perSample: perSample]
         }
