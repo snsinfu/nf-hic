@@ -8,9 +8,8 @@ process CALDER2 {
         'quay.io/biocontainers/r-calder2:0.7--r43hdfd78af_1' }"
 
     input:
-    tuple val(meta), path(cool)
+    tuple val(meta), path(cool), path(feature_track)
     val resolution
-    path feature_track
     val save_intermediates
     val nproc
 

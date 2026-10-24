@@ -128,7 +128,13 @@ workflow {
         ch_feature_track = channel.value([])
     }
 
-    CALDER2_HIC(ch_cool, channel.value(params.calder2_resolution), ch_feature_track, channel.value(params.save_calder2_intermediates), channel.value(params.calder2_nproc as int))
+    // The track is part of the cooler tuple; wrap `[]` (built-in reference) so
+    // combine keeps it as one value instead of expanding it as an empty list.
+    ch_cool_calder = ch_cool
+        .combine(ch_feature_track.map { track -> [track: track] })
+        .map { meta, cool, wrapped -> [meta, cool, wrapped.track] }
+
+    CALDER2_HIC(ch_cool_calder, channel.value(params.calder2_resolution), channel.value(params.save_calder2_intermediates), channel.value(params.calder2_nproc as int))
 }
 
 /*

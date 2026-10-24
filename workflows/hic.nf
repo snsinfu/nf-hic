@@ -240,8 +240,17 @@ workflow HIC {
             ch_feature_track = channel.value([])
         }
 
-        MERGE_LIBRARY_CALDER2(MERGE_LIBRARY.out.mcool, channel.value(params.calder2_resolution), ch_feature_track, channel.value(params.save_calder2_intermediates), channel.value(params.calder2_nproc as int))
-        MERGE_REPLICATE_CALDER2(MERGE_REPLICATE.out.mcool, channel.value(params.calder2_resolution), ch_feature_track, channel.value(params.save_calder2_intermediates), channel.value(params.calder2_nproc as int))
+        // The track is part of the cooler tuple; wrap `[]` (built-in reference) so
+        // combine keeps it as one value instead of expanding it as an empty list.
+        ch_mlb_calder = MERGE_LIBRARY.out.mcool
+            .combine(ch_feature_track.map { track -> [track: track] })
+            .map { meta, cool, wrapped -> [meta, cool, wrapped.track] }
+        ch_mrp_calder = MERGE_REPLICATE.out.mcool
+            .combine(ch_feature_track.map { track -> [track: track] })
+            .map { meta, cool, wrapped -> [meta, cool, wrapped.track] }
+
+        MERGE_LIBRARY_CALDER2(ch_mlb_calder, channel.value(params.calder2_resolution), channel.value(params.save_calder2_intermediates), channel.value(params.calder2_nproc as int))
+        MERGE_REPLICATE_CALDER2(ch_mrp_calder, channel.value(params.calder2_resolution), channel.value(params.save_calder2_intermediates), channel.value(params.calder2_nproc as int))
     }
 
     //

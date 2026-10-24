@@ -30,17 +30,17 @@ input:
         description: Path to COOL file
         pattern: "*.{cool.mcool}"
         ontologies: []
+    - feature_track:
+        type: file
+        description: Optional 4-column BED (chr, start, end, score) used to determine
+          the A/B compartment direction for this sample. Must be headerless and
+          positively correlated with the A compartment. Pass an empty list to use
+          CALDER's built-in reference compartments (hg19, hg38, mm9, mm10).
+        pattern: "*.bed"
   - resolution:
       type: integer
       description: In case a .mcool file is provided, which resolution level to
         use for the analysis
-  - feature_track:
-      type: file
-      description: Optional 4-column BED (chr, start, end, score) used to determine
-        the A/B compartment direction. Must be headerless and positively correlated
-        with the A compartment. Pass an empty list to use CALDER's built-in reference
-        compartments (hg19, hg38, mm9, mm10).
-      pattern: "*.bed"
   - save_intermediates:
       type: boolean
       description: Keep and publish the full intermediate_data/ folder (large); logs/ are always published.
