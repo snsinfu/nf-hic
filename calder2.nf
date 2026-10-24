@@ -37,12 +37,19 @@
  * file's /resolutions group. Outputs are published per input base name to
  * <outdir>/calder2/<cool_id>/{sub_compartments,sub_domains}/.
  *
- * The A/B phasing track is shared by default but can be overridden per input.
- * With --calder2_feature_track, keys are the .mcool base names:
+ * --calder2_mcool can also be a map from sample id to path/glob (or a list of
+ * paths/globs). This standalone pipeline does not infer sample ids from
+ * filenames: a bare glob/string has an empty sample id and uses only the
+ * shared/default feature track; use the map form to assign per-sample tracks:
  *
- *   --calder2_feature_track 'shared.bed,sampleA=A.bed,sampleB=B.bed'
+ *   calder2_mcool:
+ *     sampleA: 'results/bwa/merged_replicate/sampleA*.mcool'
+ *     sampleB: ['results/bwa/merged_library/sampleB_REP1.mLb.mcool',
+ *               'results/bwa/merged_library/sampleB_REP2.mLb.mcool']
  *
- * or, from a -params-file, a map with '*' as the shared fallback:
+ * The A/B phasing track is shared by default but can be overridden per sample.
+ * With --calder2_feature_track, keys are the sample ids above. A -params-file
+ * map with '*' as the shared fallback works:
  *
  *   calder2_feature_track:
  *     '*': shared.bed
@@ -70,22 +77,64 @@ workflow {
     }
 
     //
-    // --calder2_mcool is a path/glob, a comma-separated string, or a list (from
-    // -params-file). Each input becomes one entry whose base name is the output
-    // prefix. Materialize the list to fail early on empty globs or colliding
-    // output names, then fan the entries back out as a queue channel.
+    // --calder2_mcool accepts:
+    //   - a path/glob or comma-separated string (empty sample id: default track only);
+    //   - a list of paths/globs (same);
+    //   - a map of sample id -> path/glob, or sample id -> [path/glob, ...].
+    // A bare glob/string has an empty sample id and uses only the shared/default
+    // feature track. Each file becomes one output entry named by its base name;
+    // materialize the list to fail early on empty globs or colliding output names,
+    // then fan the entries back out.
     //
-    def mcool_paths = (params.calder2_mcool instanceof List)
-        ? params.calder2_mcool.collect { item -> item.toString() }
-        : params.calder2_mcool.toString().split(',').collect { token -> token.trim() }.findAll { token -> token }
+    def mcool_patterns = []   // [sample: <id|''>, pattern: <glob>]
+    if (params.calder2_mcool instanceof Map) {
+        params.calder2_mcool.each { sample, spec ->
+            def sampleId = sample == null ? null : sample.toString().trim()
+            if (!sampleId) {
+                error("Invalid --calder2_mcool map: empty sample id.")
+            }
+            def patterns = (spec instanceof List)
+                ? spec.collect { item -> item.toString().trim() }
+                : [ spec.toString().trim() ]
+            patterns.each { pattern ->
+                if (!pattern) {
+                    error("Invalid --calder2_mcool map for '${sampleId}': empty path/glob.")
+                }
+                mcool_patterns << [sample: sampleId, pattern: pattern]
+            }
+        }
+    }
+    else {
+        def patterns = (params.calder2_mcool instanceof List)
+            ? params.calder2_mcool.collect { item -> item.toString() }
+            : params.calder2_mcool.toString().split(',').collect { token -> token.trim() }
+        patterns.findAll { pattern -> pattern }.each { pattern ->
+            mcool_patterns << [sample: '', pattern: pattern]
+        }
+    }
+    if (mcool_patterns.isEmpty()) {
+        error("No mcool input specified: use --calder2_mcool <file|glob|comma-separated list|sample->glob map>.")
+    }
 
-    ch_cool = channel.fromPath(mcool_paths, checkIfExists: true)
-        .map { path ->
+    def mcool_files = []
+    mcool_patterns.each { entry ->
+        def matches = files(entry.pattern)
+        if (!matches) {
+            error("--calder2_mcool pattern '${entry.pattern}' matched no files.")
+        }
+        matches.each { path ->
+            mcool_files << [sample: entry.sample, path: path]
+        }
+    }
+
+    ch_cool = channel.fromList(mcool_files)
+        .map { entry ->
+            def path = entry.path
             if (path.isDirectory()) {
                 error("--calder2_mcool expects a cooler file, got directory: ${path}")
             }
             def name = path.baseName
-            [ [id: name, cool_id: name], path ]
+            [ [id: name, cool_id: name, sample: entry.sample], path ]
         }
         .toList()
         .map { entries ->
@@ -103,7 +152,8 @@ workflow {
 
     //
     // CALDER2 A/B phasing track. CALDER2_FEATURE_TRACK resolves the default and
-    // CALDER2_ATTACH_TRACK applies this precedence per input (key = mcool base name):
+    // CALDER2_ATTACH_TRACK applies this precedence per input (key = --calder2_mcool map key;
+    // a bare input has an empty sample id and uses only the shared/default track):
     //   1. per-sample --calder2_feature_track entry
     //   2. shared --calder2_feature_track entry
     //   3. auto-generated gene density (non-built-in genome; needs --gtf and --chrom_sizes)
@@ -123,7 +173,7 @@ workflow {
         params.calder2_resolution
     )
 
-    ch_known_sample_ids = ch_cool.map { meta, _cool -> meta.id }.toList()
+    ch_known_sample_ids = ch_cool.map { meta, _cool -> meta.sample }.toList()
 
     ch_cool_calder = CALDER2_ATTACH_TRACK(
         ch_cool,

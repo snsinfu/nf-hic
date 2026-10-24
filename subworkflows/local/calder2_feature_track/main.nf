@@ -164,7 +164,10 @@ workflow CALDER2_ATTACH_TRACK {
     ch_cool_tracked = ch_cool
         .combine(ch_config)
         .map { meta, cool, config ->
-            [meta, cool, config.perSample[meta.id] ?: config.fallback]
+            // Empty sample = no sample identity: match the shared/default track only.
+            // The main pipeline has no `sample` key and uses meta.id.
+            def sampleKey = meta.sample != null ? meta.sample : meta.id
+            [meta, cool, config.perSample[sampleKey] ?: config.fallback]
         }
 
     emit:
