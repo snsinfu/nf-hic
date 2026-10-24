@@ -5,6 +5,9 @@
     One `--calder2_feature_track` value can carry a shared track, per-sample tracks, or
     both. The default is resolved once (explicit shared track > auto gene density for a
     non-built-in genome > CALDER's built-in reference), then attached to each cooler.
+    Auto gene density is generated only when no shared track exists and at least one
+    known sample id lacks a per-sample entry; explicit tracks covering every sample
+    therefore skip the generator entirely.
 */
 
 include { CALDER2_GENE_DENSITY } from '../../../modules/local/calder2_gene_density'
@@ -91,8 +94,9 @@ workflow CALDER2_FEATURE_TRACK {
     genome              // effective CALDER genome name, for messages
     builtin             // boolean: hg19|hg38|mm9|mm10
     gtf                 // path or null; needed only for auto gene density
-    chrom_sizes         // channel (main pipeline) or path/null (standalone)
+    ch_chrom_sizes      // channel with chrom.sizes, or null when unavailable
     resolution          // integer: gene-density window / CALDER resolution
+    ch_known_ids        // channel: list of sample ids that will receive CALDER2
 
     main:
     def spec = parseCalder2FeatureTrack(track_spec)
@@ -105,25 +109,56 @@ workflow CALDER2_FEATURE_TRACK {
                  "(CALDER treats the genome as 'others'; the built-in reference is not used)."
     }
 
+    def sharedTrack = spec.shared ? calder2TrackFile(spec.shared, 'shared track') : null
+
     track = channel.empty()
-    if (spec.shared) {
-        track = channel.value(calder2TrackFile(spec.shared, 'shared track'))
+    if (sharedTrack) {
+        track = channel.value(sharedTrack)
     }
     else if (!builtin) {
-        if (!gtf) {
-            error("CALDER2 A/B phasing for genome '${genome}' needs a gene-density track, but no GTF annotation was found. " +
-                  "Use --gtf <genes.gtf> or a --genome with a 'gtf' catalog entry.")
+        // Only sample ids without a per-sample entry need the generated default.
+        ch_missing_ids = ch_known_ids.map { ids ->
+            def known = (ids ?: []).collect { id -> id == null ? '' : id.toString() }
+            known.findAll { id -> !perSampleFiles.containsKey(id) }.unique()
         }
-        if (!chrom_sizes) {
-            error("CALDER2 A/B phasing for genome '${genome}' needs --chrom_sizes to generate a gene-density track. " +
-                  "Use --chrom_sizes <chrom.sizes> or a --genome with a 'chrom_sizes' catalog entry.")
-        }
+
+        // Validate references only when a generated track is actually required.
+        // flatMap (not map+filter) keeps an empty request channel completing cleanly.
+        ch_gene_request = ch_missing_ids
+            .flatMap { missing ->
+                if (!missing) {
+                    return []
+                }
+                def labels = missing.collect { id -> id ? id : '<bare input>' }
+                if (!gtf) {
+                    error("CALDER2 A/B phasing needs a gene-density track for sample(s) " +
+                          "${labels.join(', ')} because they have no --calder2_feature_track entry " +
+                          "and no GTF annotation was found. Use --gtf <genes.gtf>, a --genome with a " +
+                          "'gtf' catalog entry, or add per-sample tracks.")
+                }
+                if (!ch_chrom_sizes) {
+                    error("CALDER2 A/B phasing needs a gene-density track for sample(s) " +
+                          "${labels.join(', ')} because they have no --calder2_feature_track entry " +
+                          "and no chrom.sizes file was found. Use --chrom_sizes <chrom.sizes>, a " +
+                          "--genome with a 'chrom_sizes' catalog entry, or add per-sample tracks.")
+                }
+                [[gtf: file(gtf, checkIfExists: true)]]
+            }
+
+        // ch_chrom_sizes may be null in the standalone pipeline; guard the graph
+        // construction so an unneeded gene-density job does not touch a null channel.
+        def ch_chrom = ch_chrom_sizes ?: channel.empty()
+        ch_gene_input = ch_gene_request
+            .combine(ch_chrom.map { chrom -> [chrom: chrom] })
+            .map { request, chromWrapper -> [request.gtf, chromWrapper.chrom] }
+
         CALDER2_GENE_DENSITY(
-            chrom_sizes,
-            channel.value(file(gtf, checkIfExists: true)),
-            channel.value(resolution)
+            ch_gene_input.map { pair -> pair[1] },
+            ch_gene_input.map { pair -> pair[0] },
+            ch_gene_input.map { _pair -> resolution }
         )
-        track = CALDER2_GENE_DENSITY.out.bed
+        // No task when every sample is covered: keep the empty fallback.
+        track = CALDER2_GENE_DENSITY.out.bed.ifEmpty([])
     }
     else {
         track = channel.value([])

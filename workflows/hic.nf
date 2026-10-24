@@ -76,6 +76,10 @@ workflow HIC {
     // Build one input item per samplesheet row and normalize the (optional) tech replicate
     //
     ch_samplesheet = channel.fromList(samplesheetToList(params.input, "${projectDir}/assets/schema_input.json"))
+    // Every samplesheet sample id can produce an L1 cooler; L2 is a subset. Deriving the
+    // ids here (before merging) lets the feature-track resolver decide early whether the
+    // gene-density default is needed.
+    ch_known_sample_ids = ch_samplesheet.map { meta, _fastq_1, _fastq_2 -> meta.id }.unique().toList()
     ch_rows = ch_samplesheet.map { meta, fastq_1, fastq_2 ->
         def tech    = meta.tech_replicate ?: 1
         def library = "${meta.id}_REP${meta.replicate}_T${tech}"
@@ -214,7 +218,8 @@ workflow HIC {
     if (calder2_enabled) {
         //
         // Resolve the default track once, then attach it (or a per-sample override) to
-        // every cooler. CALDER2_GENE_DENSITY runs at most once for both merge levels.
+        // every cooler. CALDER2_GENE_DENSITY runs at most once for both merge levels, and
+        // only when at least one sample lacks a per-sample track and no shared track is set.
         //
         CALDER2_FEATURE_TRACK(
             params.calder2_feature_track,
@@ -222,13 +227,12 @@ workflow HIC {
             calder2_builtin,
             gtf,
             PREPARE_GENOME.out.chrom_sizes,
-            params.calder2_resolution
+            params.calder2_resolution,
+            ch_known_sample_ids
         )
 
-        // L1 has one item per sample, so it supplies the ids used to warn on typos in
-        // per-sample keys. L2 is a subset (single-bio samples have no L2 map).
-        ch_known_sample_ids = MERGE_LIBRARY.out.mcool.map { meta, _cool -> meta.id }.toList()
-
+        // Samplesheet sample ids cover every L1 cooler and are available before the merge;
+        // L2 is a subset (single-bio samples have no L2 map).
         ch_mlb_calder = CALDER2_ATTACH_TRACK(
             MERGE_LIBRARY.out.mcool,
             CALDER2_FEATURE_TRACK.out.track,

@@ -156,7 +156,8 @@ workflow {
     // a bare input has an empty sample id and uses only the shared/default track):
     //   1. per-sample --calder2_feature_track entry
     //   2. shared --calder2_feature_track entry
-    //   3. auto-generated gene density (non-built-in genome; needs --gtf and --chrom_sizes)
+    //   3. auto-generated gene density (non-built-in genome; only for samples without a
+    //      per-sample entry, and only when no shared entry is set; needs --gtf and --chrom_sizes)
     //   4. none -> CALDER's built-in reference compartments (hg19|hg38|mm9|mm10)
     //
     def calder2_genome  = params.calder2_genome ?: params.genome
@@ -164,16 +165,17 @@ workflow {
     def chrom_sizes     = params.chrom_sizes ?: getGenomeAttribute('chrom_sizes')
     def gtf             = params.gtf         ?: getGenomeAttribute('gtf')
 
+    ch_known_sample_ids = ch_cool.map { meta, _cool -> meta.sample }.unique().toList()
+
     CALDER2_FEATURE_TRACK(
         params.calder2_feature_track,
         calder2_genome,
         calder2_builtin,
         gtf,
         chrom_sizes ? channel.value(file(chrom_sizes, checkIfExists: true)) : null,
-        params.calder2_resolution
+        params.calder2_resolution,
+        ch_known_sample_ids
     )
-
-    ch_known_sample_ids = ch_cool.map { meta, _cool -> meta.sample }.toList()
 
     ch_cool_calder = CALDER2_ATTACH_TRACK(
         ch_cool,
