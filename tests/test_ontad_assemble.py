@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Regression test: OnTAD start/end are opening/closing bin midpoints.
 
+Level-0 whole-chromosome rows are dropped during assembly.
+
 Run: python3 tests/test_ontad_assemble.py
 """
 import importlib.util
@@ -48,9 +50,16 @@ class FakeColumn:
     def __eq__(self, other):
         return [value == other for value in self.values]
 
+    def __ne__(self, other):
+        if isinstance(other, FakeColumn):
+            return [a != b for a, b in zip(self.values, other.values)]
+        return [value != other for value in self.values]
+
 
 class FakeFrame:
-    def __init__(self, data):
+    def __init__(self, data=None, columns=None):
+        if data is None:
+            data = {column: [] for column in (columns or [])}
         items = list(data.items())
         length = next(
             (len(value) for _, value in items if isinstance(value, (FakeColumn, list, tuple, FakeArray))),
@@ -186,12 +195,22 @@ def _load():
     return module
 
 
+def _read_records(path):
+    with open(path) as handle:
+        lines = [
+            line.rstrip("\n").split("\t")
+            for line in handle
+            if not line.startswith("#")
+        ]
+    return [dict(zip(lines[0], row)) for row in lines[1:]]
+
+
 class MidpointCoordinatesTest(unittest.TestCase):
     def test_start_and_end_are_opening_and_closing_bin_midpoints(self):
         with tempfile.TemporaryDirectory() as tmp:
             tad_path = os.path.join(tmp, "chr1.tad")
             with open(tad_path, "w") as handle:
-                handle.write("1\t2\t0\t1.0\t1.0\n")
+                handle.write("1\t2\t1\t1.0\t1.0\n")
             output_path = os.path.join(tmp, "out.tsv")
 
             module = _load()
@@ -204,17 +223,58 @@ class MidpointCoordinatesTest(unittest.TestCase):
                 tads=[tad_path],
             )
 
-            with open(output_path) as handle:
-                lines = [
-                    line.rstrip("\n").split("\t")
-                    for line in handle
-                    if not line.startswith("#")
-                ]
-            record = dict(zip(lines[0], lines[1]))
+            record = _read_records(output_path)[0]
             self.assertEqual(record["start"], "5000")
             self.assertEqual(record["end"], "15000")
             self.assertEqual(record["start_bin_id"], "0")
             self.assertEqual(record["end_bin_id"], "1")
+
+
+class LevelZeroTest(unittest.TestCase):
+    def test_level_zero_rows_are_dropped(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tad_path = os.path.join(tmp, "chr1.tad")
+            with open(tad_path, "w") as handle:
+                handle.write("1\t3\t0\t1.0\t1.0\n")
+                handle.write("1\t2\t1\t1.0\t1.0\n")
+                handle.write("2\t3\t1\t1.0\t1.0\n")
+            output_path = os.path.join(tmp, "out.tsv")
+
+            module = _load()
+            module.main(
+                cool="fake.cool",
+                bin_size=10000,
+                output=output_path,
+                prefix=None,
+                metadata=None,
+                tads=[tad_path],
+            )
+
+            records = _read_records(output_path)
+            self.assertEqual([record["tad_level"] for record in records], ["1", "1"])
+            self.assertEqual(
+                [(record["start"], record["end"]) for record in records],
+                [("5000", "15000"), ("15000", "25000")],
+            )
+
+    def test_only_level_zero_produces_header_only_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tad_path = os.path.join(tmp, "chr1.tad")
+            with open(tad_path, "w") as handle:
+                handle.write("1\t3\t0\t1.0\t1.0\n")
+            output_path = os.path.join(tmp, "out.tsv")
+
+            module = _load()
+            module.main(
+                cool="fake.cool",
+                bin_size=10000,
+                output=output_path,
+                prefix=None,
+                metadata=None,
+                tads=[tad_path],
+            )
+
+            self.assertEqual(_read_records(output_path), [])
 
 
 if __name__ == "__main__":

@@ -8,8 +8,12 @@ OnTAD output rows are headerless, 1-based, closed intra-chromosomal bin
 intervals: start_bin_id, end_bin_id, tad_level, tad_mean, tad_score. The
 output keeps those column names but reports start_bin_id/end_bin_id as the
 global bin ids of the source cool (so they can be joined against cooler bins).
-`start`/`end` are the bin midpoints; full bin intervals are not repeated
-because they can be recovered from the bin ids.
+`start`/`end` are the opening/closing bin midpoints, i.e. BED half-open
+coordinates [start_bin.start + bin_size/2, end_bin.end - bin_size/2). Full bin
+intervals are not repeated because they can be recovered from the bin ids.
+
+The level-0 whole-chromosome row is dropped because it is not part of the
+domain tree.
 """
 
 import argparse
@@ -82,6 +86,7 @@ def main(
             header=None,
             names=ONTAD_COLUMNS,
         )
+        section_tads = section_tads[section_tads["tad_level"].astype(int) != 0]
         if section_tads.empty:
             continue
 

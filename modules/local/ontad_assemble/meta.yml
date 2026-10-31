@@ -50,8 +50,9 @@ output:
           type: file
           description: |
             TSV: chrom, start, end, start_bin_id, end_bin_id, tad_level,
-            tad_mean, tad_score. start/end are bin midpoints,
-            start_bin_id/end_bin_id are global cooler bin ids.
+            tad_mean, tad_score. start/end are opening/closing bin midpoints
+            (BED half-open), start_bin_id/end_bin_id are global cooler bin ids.
+            Level-0 whole-chromosome rows are omitted.
           pattern: "*.ontad.tsv"
           ontologies: []
   versions_cooler:
